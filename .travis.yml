@@ -1,0 +1,27 @@
+sudo: required
+git:
+  clone: false
+language: python
+python:
+- '3.6'
+before_install:
+- curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
+- sudo cpanm --notest DBI
+- sudo cpanm --notest DBD::Pg
+- echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+- docker pull busybox
+- docker pull flybase/proformatestdb
+- docker pull flybase/harvdev-docker
+script:
+- export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH;
+  else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
+- echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH"
+- git clone git@github.com:FlyBase/harvdev-proforma-setup.git
+- cd harvdev-proforma-setup
+- "./build_test_travis_perl.sh"
+- pip3 install -r requirements.txt
+- python3 ./test_scripts/run_tests.py
+env:
+  global:
+  - secure: gXwKppbv81YqrUicyLuOQWACtn6LBHES8mRYa4oU1EUEwzxxa/m/LlbkQ7MywRTqhDVrUBqYbOolhnsWaIrdimjPpweGW4goFSbwF7BUhL14OMmBJForHx71JlNIcZM9hD2fL8zf4NJeK5uhbtw2uv2VxxkWtVYvR8kvKLj4BmRndQA7FK71uTCAPxF5qqF1VruCQI3NeLYlMjlk0PvY4aM//4bvIA53ypudiwe91g1C3G8MphD4dBvH1LmqAJ1g5a13b72HkvR7zGq018V4qPGVgQWYchkTl4U2rUYjxfCSKn1ffzp3PMvcpepjlkuDH1caarwvC5andbkF2h+7u893+rXq+OpM7Fj6V+cKq7IKRrbqwqPdXoAZF2+mcBWpAthHoth0y2fNXKjN1lUFk7GrWtih6h9Ods4j1r6acyGlZ8mZtdjeZKDuE37aTGH0Qu7MdP7am+rkjUC/s/ARA+NH3ho4OHp3xJTaQH4oossnte7zG/oruIh4eg1sGzvl5NPeXEixONOCAcd+r8n/G5qkFg5d8ddNa44Ow8qkj0991Akbt0X7eD5rP02HQMWv+t9boQGqeqNzQeWoJhpBvnhdqxajdDwsLbKsNGJ9iSuLAMyo0C6/uwvZWhjqCuiOSn8BdcvCKroqzQitzBhyb6Z/eu0OqMb28pfa2kpfWiI=
+  - secure: MByY6VIw4WhmeK+gaaM6YPHOym5IAA9Nn9drhsNOm9V/6WWdOyPxL/IPMYSFKxbpUJMKo38mGoMTBmnuixBWYmc2+QuOcMPmRcSVnd/lBBf9QgSJvZO0xHQXPXMzZm09g4vzJi4AV11CEHRz+7PekbaKAjCvn0DaO6ozAjuA3YtOdVuiZ4OQ+V1WmYui7puW1lzgbhtJQJYPTi7iQEaaJgtvR3Fy3CzUMDt9LKqexGJgpF2DVrSeYx7I6ffUfMxTfGspuKC3TFfZyLt8UBXdZIeNilrPBa1ZB7PKcsVMxSNLX9OlNv3g9AxMD1hNMDMzlDj/tGjXTejrghe4EtT6QeDElbZz7Z3YIj91H59/NmQeZNytsfH7grLVapY8BwuopmDeJ+DQxxQA214F+QoZnIU9wo6seAX1am0iyXyRrWlQ0BEsWlMTgfFS9fayXLK5dReeVPX947cJvqfE00i8fuBQqkIPToTzUaOHxLiLVwzE1DcheiY1G8mAs9Vlp4Wm3v5pA/GOiPztP1lBzCUmXtGS5trrdbFKf8fOXJbJy5bqVpvU736lpRfqvkUhmBiaaRpBFf/WwcgGk+rXvszSb2QlrixBi14NgekV3sKMdsN/AhC8nkmvp95lOAPKvexmXfjJ2wWtp7Q27HNtHQlj3NSAfstnpcgS/pgSGmD1T0g=
