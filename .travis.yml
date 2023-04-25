@@ -1,0 +1,30 @@
+sudo: required
+git:
+  clone: false
+language: python
+python:
+- '3.6'
+before_install:
+- echo -e "machine github.com\n  login $CI_USER_TOKEN" > ~/.netrc 
+- curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
+- sudo cpanm --notest DBI
+- sudo cpanm --notest DBD::Pg
+- echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+- docker pull busybox
+- docker pull flybase/proformatestdb
+- docker pull flybase/harvdev-docker
+script:
+- export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH;
+  else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
+- echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH"
+- git clone https://github.com/FlyBase/harvdev-proforma-setup.git
+- cd harvdev-proforma-setup
+- "./build_test_travis_perl.sh"
+- pip3 install -r requirements.txt
+- python3 ./test_scripts/run_tests.py
+env:
+  global:
+  - secure: EpHKvleUdlnWJLBhM33zplFuEocsLB92/OMrEp05Sr36E4Ntx1jSrXGAjFkh7YXonLaRWPjInKPNRjl367Hqye7ENSIKoim5rXs5R/xgrW8J2H6JBNf0dWbovyEWn5oKV3+DzdTUH8xGIO28CvxIpcFIfsMb4kasrJRX1TVhlcKJzRITrZ76IyzUrzzRnnjsG+dB6ntMikYzodzOkeWRwlIyCESO5Uqcf1w9p4nuBqaCJ6P08ZyD8EeDIevg+TfQD8kofBWW+h/+vGWev2aSDY23m7h9jpjB9pTpcgVDTm4Q6P9rc0GC14rJvgDstGCQVOLKxB+v+/39aXzan0hhviUEiaXtDCT1yRQ1dRoagXxEcZrCGigZDpq1Fqlr9xo27pVFALdEkReXx8793m+QLOvu7+8l0jt0Uu6I8x0IeCHgtIfgeV1FPZY6i7xtg5spKu6TSHGZEtuCXRkvUZR/V/xL0YHz9aUpYBc7MZQWXJfNMqMuDYp9X8iETXGA1QBzUkc/c3ceShEOfgQhdf9LKQB1Tpd5haShv99TsoxLtxUJOThhCawIBv+NXJmltowntG8PLanm76ejJ1K4/mvHb6lzE06p9egCOVkG1qbQwGUW/i1IHaZuaikxw8zXtcxZ6Z+1ZR3Kr2Xwbht3gBrJTr97AaSkiBwU9swbYY12cP4=
+  - secure: vJvKxhoFeZbOGH9pBhG2YTnbnMMxowskyOhCdca63NXlK5xhaXxooZ9az64DJkhCz5IiLBtKv5LEYZp262gRuBeE7J6PkpsBQIf1Io9KCvs2NUS4LfRUuA5BFIjP+61KACS9qqI7Aw6Vcq9bFle9fbeISsRF72xdBgZQ+94/XHBVSBZDiTd79D2vx7XIeNsXAd+Re2rDtsZ0qbSx1BgXTFHkzQGqs+On/xn8l8cskpw3ujml9NUOG273T31z1sxrUnijZwnUYyR512ounwWgpy5ygsyvpyAl5834kkIV4qhsafD4O7p32fOYDVKNJQxnMaKkPmYFLrH+4mw4uVxTq8ljzaL3xDCKk5JEIufwnqEhv+e0fIuOks/aMdO6VrQKqH1VRM50KzsT1kvdbblj+Ip9u4vZQjh6yruMK8cYyx3C+FFAuIG3fUv5TIS2E/91hzEW3Zb1RQB01gNY2WejfyAHYn5DjjmhMIx6Y6y33ujF9cFkYgSOuiFjQQuBDasLEJSrhlaYfe3J78UtZbELKUyvlwsaIBwX2pl6So78sLdYOUd6lH3tZ1zMY67704PxmtjC3Ffx67PB2VyfzgaSRfjXwF4OEQCvPMt28LAHeW4p93bK7opdW5ro1neQXhroZ2qLAh063LhMREeaop/GEn+xxKJcghAyUgSzoZ47SxU=
+  - secure: jj98xlSlYQmDC+R6Nku1WyQ09UowsukOIGWq7EJX7Qugsz5x89Krjmc5oH1T/QnEFqnzHpsvROnjA0/2RLpggrsm7Au6/hzZBOXk/xKrE/NZD2XNPbB7S9ICMwB5wKRQUI2DFZ7Utth5gnN8wnDqCDxgqWuIN82peP0XFVxLSYCr6EyymOQdZ7bPJs51YH5Zx6bQbQLCItPBdJBkoCTk0nMWigDAmWqx/BndRDq4d7FqL5Qz2aA+AL2o8ur0boWGmMtzZ4BwVwuSisBS21eKUJM/YzneGXFwix9WHUAX/p3mu3qoSalNU+zuNCFF1Tfcc98po+U0WDsWOXNE5mJ3u5iDd24xWXs5D18P053plmwjf3e8DiaZd3/xcb09UWNZdNqVDTGSHTI+Ze4vOr7VUn5QmcaaQ+ak7x1sGMpRt/227Gn750kUZTEuZon153LZnv3TVpcJtcF11P5X81W8x9y+dGrmvvXFJiF1doEM95UTJD3jVCqKlatDUJyFQQe48zma2hpQ0vQJVD/yHrbLp9+Vs+WW/BVhPB3facaUpiVOxQ+FsKrrrZe7lsJb5st0DJqaoNswY5fds4pZCjnBOI08TtevBjd//0AQJCcKP0ovGSBh6aUi7rB4UQMAh+LNYop0EqFz0qAfShJSxGc7yE9e/pVIHl8YRJj25I+Vt8U=
+  
