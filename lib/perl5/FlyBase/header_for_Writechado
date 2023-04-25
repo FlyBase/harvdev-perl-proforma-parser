@@ -1,0 +1,67 @@
+package FlyBase::WriteChado;
+
+use 5.008005;
+use strict;
+use warnings;
+use XML::DOM;
+
+require Exporter;
+
+our @ISA = qw(Exporter);
+
+# Items to export into callers namespace by default. Note: do not export
+# names by default without a very good reason. Use EXPORT_OK instead.
+# Do not simply export all your public functions/methods/constants.
+
+# This allows declaration	use FlyBase::WriteChado ':all';
+# If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
+# will save memory.
+our %EXPORT_TAGS = ( 'all' => [ qw( create_ch_pub create_ch_contact create_ch_cv 
+	create_ch_cvterm create_ch_cvtermprop create_ch_cvterm_relationship
+	create_ch_db create_ch_dbxref create_ch_feature create_ch_pubauthor
+	create_ch_feature_cvterm create_ch_feature_cvtermprop create_ch_frprop_pub
+	create_ch_feature_dbxref create_ch_feature_pub create_ch_pub_dbxref
+	create_ch_feature_pubprop create_ch_fr create_ch_frprop
+	create_ch_feature_synonym create_ch_featureloc create_ch_pubprop
+	create_ch_featureprop create_ch_featureprop_pub create_ch_library
+	create_ch_libraryprop create_ch_libraryprop create_ch_library_pub
+	create_ch_library_strain create_ch_library_strainprop create_ch_library_synonym create_ch_organism create_ch_phenotype
+	create_ch_pub_relationship create_ch_synonym create_ch_prop
+	create_ch_genotype create_ch_feature_genotype create_ch_libraryprop_pub
+	create_ch_fr_pub create_ch_featureloc_pub create_ch_library_feature
+	create_ch_fr_prop_pub create_ch_phendesc create_ch_phenstatement
+	create_ch_phenotype_comparison create_ch_phenotype_cvterm
+	create_ch_phenotype_comparison_cvterm create_ch_environment create_ch_cell_line_cvterm create_ch_cell_line_cvtermprop
+	create_ch_library_dbxref create_ch_library_dbxrefprop create_ch_library_cvterm create_ch_cell_line_dbxref 
+	create_ch_feature_relationship create_ch_feature_relationship_pub
+	create_ch_dbxrefprop create_ch_analysisfeature create_ch_analysis
+	create_ch_analysisprop create_ch_cell_line create_ch_cell_line_library create_ch_cell_line_libraryprop 
+	create_ch_expression create_ch_expressionprop create_ch_expression_pub
+	create_ch_expression_cvterm create_ch_expression_cvtermprop create_ch_expression_cvterm_relationship
+	create_ch_feature_expressionprop create_ch_cell_line_pub create_ch_cell_line_synonym
+	create_ch_feature_expression create_ch_library_expression create_ch_cell_lineprop create_ch_cell_lineprop_pub
+	create_ch_library_expressionprop create_ch_library_relationship create_ch_library_relationship_pub
+	create_ch_cell_line_relationship create_ch_clr create_ch_c_l_r create_ch_cell_line_feature create_ch_feature_interaction 
+        create_ch_feature_interactionprop create_ch_feature_interaction_pub create_ch_interaction create_ch_interactionprop 
+        create_ch_interactionprop_pub create_ch_interaction_cell_line create_ch_interaction_cvterm create_ch_interaction_cvtermprop 
+        create_ch_interaction_expression create_ch_interaction_expressionprop create_ch_interaction_pub create_ch_library_featureprop 
+        create_ch_library_interaction create_ch_strain create_ch_strain_cvterm create_ch_strain_cvtermprop create_ch_strain_dbxref 
+        create_ch_strain_feature create_ch_strain_featureprop create_ch_strain_phenotype create_ch_strain_phenotypeprop create_ch_strain_pub 
+        create_ch_strain_relationship create_ch_strain_relationship_pub create_ch_strain_synonym create_ch_strainprop create_ch_strainprop_pub 
+        create_ch_library_humanhealth create_ch_library_humanhealthprop  create_ch_humanhealth create_ch_humanhealth_cvterm 
+        create_ch_humanhealth_cvtermprop create_ch_humanhealth_dbxref create_ch_humanhealth_dbxrefprop create_ch_humanhealth_dbxrefprop_pub create_ch_humanhealth_feature 
+        create_ch_humanhealth_featureprop create_ch_humanhealth_phenotype create_ch_humanhealth_phenotypeprop create_ch_humanhealth_pub create_ch_humanhealth_pubprop
+        create_ch_humanhealth_relationship create_ch_humanhealth_relationship_pub 
+        create_ch_humanhealth_synonym create_ch_humanhealthprop create_ch_humanhealthprop_pub  create_ch_feature_humanhealth_dbxref
+        create_ch_grp create_ch_grpprop create_ch_grpprop_pub create_ch_grp_relationship create_ch_grp_relationship_pub create_ch_grp_relationshipprop 
+        create_ch_analysisgrp create_ch_grp_cvterm create_ch_grp_dbxref create_ch_grp_pub create_ch_grp_pubprop create_ch_grp_synonym 
+	create_ch_grpmember create_ch_grpmember_cvterm create_ch_grpmember_pub create_ch_grpmemberprop create_ch_grpmemberprop_pub 
+	create_ch_feature_grpmember create_ch_feature_grpmember_pub create_ch_library_grpmember create_ch_organism_grpmember create_ch_analysisgrpmember create_ch_organism_cvterm create_ch_organism_cvtermprop create_ch_organism_dbxref create_ch_organism_pub create_ch_organismprop create_ch_organismprop_pub create_ch_library_cvtermprop create_ch_organism_library
+) ] );
+
+our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
+
+our @EXPORT = (@{$EXPORT_TAGS{'all'}});
+
+our $VERSION = '0.01';
+
