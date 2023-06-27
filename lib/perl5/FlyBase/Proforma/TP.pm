@@ -140,13 +140,8 @@ our %tp_feat_type = (
 my %ms30a_type = ('experimental_result', 1 , 'member_of_reagent_collection', 1);
 my %fcp_type = ('MS14d', 'tool_uses');
 
-my %feat_type = (
-    'MS14a', 'engineered_region',
-    'MS14b', 'engineered_region',
-    'MS14c', 'engineered_region',
-    'MS24', 'allele',
-);
-my %id_type = ('MS14a', 'to', 'MS14b', 'to', 'MS14c', 'to','MS24', 'al');
+my %feat_type = ('MS24', 'allele');
+my %id_type = ('MS24', 'al');
 
 my $doc = new XML::DOM::Document();
 my $db  = '';
@@ -762,11 +757,7 @@ sub process {
 	  print STDERR "ERROR: MS30a has a term for MS30a but no library\n";
 	}
 #Tools	    
-	elsif ($f eq 'MS14a'
-	       || $f eq 'MS14b'
-	       || $f eq 'MS14c'
-	       || $f eq 'MS24'
-	    )
+	elsif ($f eq 'MS24')
 	{ 
 	    my $object  = 'object_id';
 	    my $subject = 'subject_id';
@@ -811,7 +802,7 @@ sub process {
 		    $out.=$f_p;
 		}
 	    }
-	} # end elsif $f eq 'MS14a'|| $f eq 'MS14b'|| $f eq 'MS14c'|| $f eq 'MS24'
+	} # end elsif 'MS24'
 
 	elsif ($f eq 'MS15'){
 	    if ( exists( $ph{ "$f.upd" } ) && $ph{ "$f.upd" } eq 'c' ) {
@@ -906,7 +897,10 @@ sub process {
 
 	} # end if MS14d
 
-        elsif ( $f eq 'MS14e' ) {         
+        elsif ($f eq 'MS14a'
+	       || $f eq 'MS14b'
+	       || $f eq 'MS14c'
+	       || $f eq 'MS14e' ) {
             my    $object  = 'object_id';
             my    $subject = 'subject_id';
             
@@ -944,7 +938,7 @@ sub process {
                     $out.=$f_p;
                 }
             }
-        }
+        } # end elsif MS14a, MS14b, MS14c, MS14e
 
     }
     $doc->dispose();
