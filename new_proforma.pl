@@ -17,7 +17,6 @@ use DBI;
 use IO::Handle;
 use File::stat;
 use Time::Local;
-#use lib '/users/falls/Projects/proforma/NEW/lib/perl5';
 use FlyBase::Proforma::TI;
 use FlyBase::Proforma::TP;
 use FlyBase::Proforma::TE;
