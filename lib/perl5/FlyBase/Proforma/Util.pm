@@ -18676,6 +18676,7 @@ sub toutf {
 
     # $string=~s/\(/\\\(/g;
     # $string=~s/\)/\\\)/g;
+    $string =~ s/&cap\;/\x{2229}/g;    # Intersection character for split-Gal4 combinations.
     $string =~ s/&agr\;/\x{03B1}/g;
     $string =~ s/&Agr\;/\x{0391}/g;
     $string =~ s/&bgr\;/\x{03B2}/g;
@@ -18740,6 +18741,7 @@ sub utftog {
     my ($string) = $_[0];
 
     #print STDERR "string=$string\n";
+    $string =~ s/[\x{2229}]/&cap;/g;    # Intersection character for split-Gal4 combinations
     $string =~ s/[\x{03B1}]/&agr;/g;
     $string =~ s/[\x{0391}]/&Agr;/g;
     $string =~ s/[\x{03B2}]/&bgr;/g;
@@ -18803,6 +18805,7 @@ sub recon {
 
     my ($string) = $_[0];
 
+    $string =~ s/intersection/&cap\;/g;    # Intersection character for split-Gal4 combinations.
     $string =~ s/alpha/&agr\;/g;
     $string =~ s/Alpha/&Agr\;/g;
     $string =~ s/beta/&bgr\;/g;
@@ -18868,6 +18871,7 @@ sub decon {
 
     my $string = $_[0];
 
+    $string =~ s/&cap\;/intersection/g;    # Intersection character for split-Gal4 combinations.
     $string =~ s/&agr\;/alpha/g;
     $string =~ s/&Agr\;/Alpha/g;
     $string =~ s/&bgr\;/beta/g;
