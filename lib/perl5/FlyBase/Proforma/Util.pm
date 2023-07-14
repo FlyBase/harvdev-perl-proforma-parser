@@ -18805,7 +18805,7 @@ sub recon {
 
     my ($string) = $_[0];
 
-    $string =~ s/intersection/&cap\;/g;    # Intersection character for split-Gal4 combinations.
+    $string =~ s/INTERSECTION/&cap\;/g;    # Intersection character for split-Gal4 combinations.
     $string =~ s/alpha/&agr\;/g;
     $string =~ s/Alpha/&Agr\;/g;
     $string =~ s/beta/&bgr\;/g;
@@ -18871,7 +18871,7 @@ sub decon {
 
     my $string = $_[0];
 
-    $string =~ s/&cap\;/intersection/g;    # Intersection character for split-Gal4 combinations.
+    $string =~ s/&cap\;/INTERSECTION/g;    # Intersection character for split-Gal4 combinations.
     $string =~ s/&agr\;/alpha/g;
     $string =~ s/&Agr\;/Alpha/g;
     $string =~ s/&bgr\;/beta/g;
