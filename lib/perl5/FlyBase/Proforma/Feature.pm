@@ -815,7 +815,8 @@ sub write_feature{
         print STDERR "ERROR: F1a $ph{F1a} must end with -XR or -XP or ]PA or ]RA\n";
 		  #return $out;
     }
-    
+
+   # NEW START
    if( exists( $ph{F1f} ) && $ph{F1f} eq 'new' ){
        if(exists($ph{F2}) && ($ph{F1a} =~/[\-XP|\-XR]$/)){
 	   print STDERR "ERROR: F1a $ph{F1a} cannot end in -XR or -XP if F2 \n";
@@ -917,7 +918,8 @@ sub write_feature{
 	   my ($fr,$f_p) = write_feature_relationship( $self->{db}, $doc, 'subject_id',
                 'object_id', $unique, $gn, 'associated_with', 'unattributed' );
 	   $out.=dom_toString($fr);
-   }
+   } # NEW END
+    # EXISTING START
     elsif( exists( $ph{F1f} ) && $ph{F1f} ne 'new' ){
        ( $genus, $species, $type ) =
               get_feat_ukeys_by_uname( $self->{db}, $ph{F1f} );
@@ -940,6 +942,17 @@ sub write_feature{
 	   print STDERR "ERROR: $unique has been in previous proforma with an action item, separate loading\n";
 	   return ($out,$unique);
        }
+       if($type eq 'split system combination'){
+       $feature = create_ch_feature(
+	   doc        => $doc,
+	   uniquename => $unique,
+	   species    => $species,
+	   genus      => $genus,
+	   type       => $type,
+       cvname     => 'FlyBase miscellaneous CV',
+	   macro_id   => $unique,
+	   no_lookup  => '1'
+       } else {
        $feature = create_ch_feature(
 	   doc        => $doc,
 	   uniquename => $unique,
@@ -949,6 +962,7 @@ sub write_feature{
 	   macro_id   => $unique,
 	   no_lookup  => '1'
 	   );
+       }
        if ( exists( $ph{F1d} ) && $ph{F1d} eq 'y' ) {
            print STDERR "Action Items: delete Feature $ph{F1f} == $ph{F1a}\n";
 	   my $op = create_doc_element( $doc, 'is_obsolete', 't' );
@@ -977,8 +991,8 @@ sub write_feature{
        }
        $fbids{$ph{F1a}}=$unique;
 
-    }
-  
+    } # EXISTING END
+
     $fbids{$ph{F1a}}=$unique;
     $doc->dispose();
     return ($out,$unique);
