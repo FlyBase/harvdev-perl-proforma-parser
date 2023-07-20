@@ -4020,6 +4020,22 @@ sub delete_table_relationship {
                 $fbids{ $fr_h{name} } = $uniquename;
             }
         }
+        elsif ( $type eq 'split system combination' ) {
+            $feature = &$create_function(
+                doc        => $doc,
+                uniquename => $uniquename,
+                type       => $type,
+                cvname     => 'FlyBase miscellaneous CV',
+                genus      => $genus,
+                species    => $species,
+                macro_id   => $uniquename
+            );
+            if ( defined($is_obsolete) && $is_obsolete eq 'f' ) {
+                $fbids{ $fr_h{name} } = $uniquename;
+            }
+        }
+
+
         else {
             $feature = &$create_function(
                 doc        => $doc,
