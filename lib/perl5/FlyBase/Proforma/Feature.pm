@@ -952,6 +952,7 @@ sub write_feature{
        cvname     => 'FlyBase miscellaneous CV',
 	   macro_id   => $unique,
 	   no_lookup  => '1'
+       );
        } else {
        $feature = create_ch_feature(
 	   doc        => $doc,
