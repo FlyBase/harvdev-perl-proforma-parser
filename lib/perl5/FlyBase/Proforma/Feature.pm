@@ -947,7 +947,7 @@ sub write_feature{
 	   species    => $species,
 	   genus      => $genus,
 	   type       => $type,
-       cvname     => 'FlyBase miscellaneous CV',
+	   cvname     => 'FlyBase miscellaneous CV',
 	   macro_id   => $unique,
 	   no_lookup  => '1'
        );
