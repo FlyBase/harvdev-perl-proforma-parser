@@ -10932,16 +10932,31 @@ sub merge_records {
             $fbids{$nn} = $unique;
             $out .= feature_name_change_action( $dbh, $doc, $id, $id, $a1, $p );
             if ( $g ne '0' ) {
-                my $feat = create_ch_feature(
-                    doc         => $doc,
-                    uniquename  => $id,
-                    genus       => $g,
-                    species     => $s,
-                    no_lookup   => 1,
-                    type        => $t,
-                    is_obsolete => 't',
-                    macro_id    => $id
-                );
+                if ( $t eq 'split system combination' ) {
+                    my $feat = create_ch_feature(
+                        doc         => $doc,
+                        uniquename  => $id,
+                        genus       => $g,
+                        species     => $s,
+                        no_lookup   => 1,
+                        type        => $t,
+                        cvname     => 'FlyBase miscellaneous CV',
+                        is_obsolete => 't',
+                        macro_id    => $id
+                    );
+                }
+                else {
+                    my $feat = create_ch_feature(
+                        doc         => $doc,
+                        uniquename  => $id,
+                        genus       => $g,
+                        species     => $s,
+                        no_lookup   => 1,
+                        type        => $t,
+                        is_obsolete => 't',
+                        macro_id    => $id
+                    );
+                }
                 $out .= dom_toString($feat);
                 $feat->dispose();
             }
