@@ -10944,6 +10944,8 @@ sub merge_records {
                         is_obsolete => 't',
                         macro_id    => $id
                     );
+                    $out .= dom_toString($feat);
+                    $feat->dispose();
                 }
                 else {
                     my $feat = create_ch_feature(
@@ -10956,9 +10958,9 @@ sub merge_records {
                         is_obsolete => 't',
                         macro_id    => $id
                     );
+                    $out .= dom_toString($feat);
+                    $feat->dispose();
                 }
-                $out .= dom_toString($feat);
-                $feat->dispose();
             }
             else {
                 print STDERR
