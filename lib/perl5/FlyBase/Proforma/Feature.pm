@@ -184,6 +184,7 @@ sub process {
         return $out;
         #($out,$unique)=$self->write_feature($self, $tihash);
     }
+    # PROCESS: DISSOCIATE FROM PUB START
     if(!exists($ph{F1e})){
      print STDERR "Action Items: gene $unique == $ph{F1a} with pub $ph{pub}\n"; 
     my $f_p = create_ch_feature_pub(
@@ -199,25 +200,27 @@ sub process {
             $out .= dissociate_with_pub( $self->{db}, $unique, $ph{pub} );
  #           return ($out, $unique);
 	    return $out;
-    }
+    }    # PROCESS: DISSOCIATE FROM PUB END
 
     print STDERR "Action Items: feature $unique == $ph{F1a} with pub $ph{pub}\n"; 
     ##Process other field in Trangenic Insertion proforma
     foreach my $f ( keys %ph ) {
         #print $f, "\n";
+        # PROCESS: RENAME START
          if ( $f eq 'F1b' ) {
             $out .=
               update_feature_synonym( $self->{db}, $doc, $unique, $ph{$f},
                 $ti_fpr_type{$f} );    
-        }
+        }    # PROCESS: RENAME END
 #        elsif ( $f eq 'F1e' ) {
 #            print STDERR "Action Items: feature $unique ==  $ph{F1e} dissociate with pub $ph{pub}\n";
 #            $out .= dissociate_with_pub( $self->{db}, $unique, $ph{pub} );
 #        }
 
+        # PROCESS: MERGE START
         elsif ( $f eq 'F1c' ) {
 	  my $tmp=$ph{$f};
-	  $tmp=~s/\n/ /g;  
+	  $tmp=~s/\n/ /g;
 	  if($ph{F1f} eq 'new'){
                 print STDERR "Action Items: merge Gene Product $tmp\n";
             }
@@ -229,7 +232,7 @@ sub process {
               $fbids{$unique}=$ph{F1a};
 	
 #         $out.=write_feature_synonyms($doc,$unique,$ph{F1a},'a','unattributed',$ti_fpr_type{F1a});
-        }   
+        }   # PROCESS: MERGE END
         elsif ( $f eq 'F4') {
                 if(exists($ph{"$f.upd"}) && $ph{"$f.upd"} eq 'c'){
                    print STDERR "Action Items: !c log,$unique $f  $ph{pub}\n";
@@ -830,30 +833,36 @@ sub write_feature{
        else{
 	   print STDERR "ERROR: please specify the feature type for the new feature\n";
        }
-       if(!exists($ph{F1c})){
-	   $flag=0;
-	   my $va=validate_new_name($db,  $ph{F1a});
-	   if($va ==1){
+        if(!exists($ph{F1c})){
+	    $flag=0;
+	    my $va=validate_new_name($db,  $ph{F1a});
+	    if($va ==1){
 	       $flag = 0;
 	       ($unique,$genus,$species,$type)=get_feat_ukeys_by_name($db,$ph{F1a});
 	       $fbids{convers($ph{F1a})}=$unique;
 	       $fbids{$ph{F1a}}=$unique;
-	   }	      
-       }
-      
-       if($type eq 'polypeptide'){
-           if(!($ph{F1a}=~/-XP$/) && !($ph{F1a}=~/]P[A-Z]$/)){
+	    }	      
+        }
+        if ( $type eq 'split system combination' ) {
+          if( ! $ph{F1a} =~ /&cap\;/ ) {
+            print STDERR "ERROR: split system combination $ph{F1a} should have '&cap;' "
+          }
+          ( $unique, $flag ) = get_tempid( 'co', $ph{F1a} );
+
+        } 
+        elsif ( $type eq 'polypeptide' ) {
+          if(!($ph{F1a}=~/-XP$/) && !($ph{F1a}=~/]P[A-Z]$/)){
             print STDERR "ERROR: polypeptide $ph{F1a} should be ended with -XP or PA\n";
-           }
-            ( $unique, $flag ) = get_tempid( 'pp', $ph{F1a} );
-      }
-      else{
-           if(!($ph{F1a}=~/-XR$/) && !($ph{F1a}=~/]R[A-Z]$/)){
+          }
+          ( $unique, $flag ) = get_tempid( 'pp', $ph{F1a} );
+        }
+        else {
+          if(!($ph{F1a}=~/-XR$/) && !($ph{F1a}=~/]R[A-Z]$/)){
             print STDERR "ERROR: transcript $ph{F1a} should be ended with -XR or RA\n";
-           }
-           ( $unique, $flag ) = get_tempid( 'tr', $ph{F1a} );
-      }
-      if(exists($ph{F1c}) && $ph{F1f} eq 'new' && $unique !~/temp/){
+          }
+          ( $unique, $flag ) = get_tempid( 'tr', $ph{F1a} );
+        }
+        if(exists($ph{F1c}) && $ph{F1f} eq 'new' && $unique !~/temp/){
 	print STDERR "ERROR: merge feature should have a FB..:temp id not $unique\n";
       }
 
@@ -877,47 +886,76 @@ sub write_feature{
             print STDERR "ERROR: could not assign temp id for $ph{F1a}\n";
             exit(0);
       }
-      else{
-            
-             $feature = create_ch_feature(
-                uniquename => $unique,
-                name       => decon( convers( $ph{F1a} ) ),
-                genus      => $genus,
-                species    => $species,
-                type       => $type,
-                doc        => $doc,
-                macro_id   => $unique,
-                no_lookup  => '1'
-            );
-            $out.=dom_toString($feature);
-             $out .=
-              write_feature_synonyms( $doc, $unique, $ph{F1a}, 'a',
-                'unattributed', 'symbol' );
-       }
-       my $gn=$ph{F1a};
-       if($gn=~/[\-XR|\-XP]$/){
-       $gn=~s/-XR$//;
-       $gn=~s/-XP$//;
-#       $gn=~s/XP$//;
-#       $gn=~s/XR$//;
-       }
-       elsif ($gn=~/[\][P[A-Z|\]R[A-Z]$/){
-#       $gn=~s/-R[A-Z]$//;
-       $gn=~s/R[A-Z]$//;
-       $gn=~s/P[A-Z]$//;
-       }
-      else{
-	  print STDERR "ERROR: Can't parse gene for product $ph{F1a}\n";
+      else {
+        if ( $type eq 'split system combination' ) {
+          $feature = create_ch_feature(
+            uniquename => $unique,
+            name       => decon( convers( $ph{F1a} ) ),
+            genus      => $genus,
+            species    => $species,
+            type       => $type,
+            cvname     => 'FlyBase miscellaneous CV',
+            doc        => $doc,
+            macro_id   => $unique,
+            no_lookup  => '1'
+          );
+          $out.=dom_toString($feature);
+          $out .= write_feature_synonyms( $doc, $unique, $ph{F1a}, 'a', 'unattributed', 'symbol' );
+        }
+        else {
+          $feature = create_ch_feature(
+            uniquename => $unique,
+            name       => decon( convers( $ph{F1a} ) ),
+            genus      => $genus,
+            species    => $species,
+            type       => $type,
+            doc        => $doc,
+            macro_id   => $unique,
+            no_lookup  => '1'
+          );
+          $out.=dom_toString($feature);
+          $out .= write_feature_synonyms( $doc, $unique, $ph{F1a}, 'a', 'unattributed', 'symbol' );
+        }
       }
-      print STDERR "gene $gn product $ph{F1a}\n";
-
-              ### Write feature_relationship with Gene as partof
-          ### Going forward make fr 'associated_with' Aug-03-2011
-	   #$out.=remove_old_gene_link($self->{db},$unique,$gn);
-	   my ($fr,$f_p) = write_feature_relationship( $self->{db}, $doc, 'subject_id',
-                'object_id', $unique, $gn, 'associated_with', 'unattributed' );
-	   $out.=dom_toString($fr);
-    }
+      my $gn=$ph{F1a};
+      my @gn_list;
+      if($gn=~/[\-XR|\-XP]$/){
+      $gn=~s/-XR$//;
+      $gn=~s/-XP$//;
+#      $gn=~s/XP$//;
+#      $gn=~s/XR$//;
+      }
+      elsif ($gn=~/[\][P[A-Z|\]R[A-Z]$/){
+#      $gn=~s/-R[A-Z]$//;
+      $gn=~s/R[A-Z]$//;
+      $gn=~s/P[A-Z]$//;
+      }
+      elsif ( $type eq 'split system combination' && ph{F1a} =~ /&cap\;/ ) {
+        my @gn_list = split('&cap;', @gn_list);
+      }
+      else {
+        @gn_list = ($ph{F1a});
+        print STDERR "ERROR: Can't parse gene for product $ph{F1a}\n";
+      }
+      my $gn_list_length = scalar @gn_list;
+      if ( $gn_list_length > 1 ) {
+        foreach my $split_component (@gn_list) {
+          print STDERR "split system component $split_component is part of $ph{F1a}\n";
+	      my ($fr,$f_p) = write_feature_relationship( $self->{db}, $doc, 'subject_id',
+                          'object_id', $unique, $split_component, 'partially_produced_by', 'unattributed' );
+	      $out.=dom_toString($fr);
+        }
+      }
+      else {
+        print STDERR "gene $gn product $ph{F1a}\n";
+        ### Write feature_relationship with Gene as partof
+        ### Going forward make fr 'associated_with' Aug-03-2011
+  	    #$out.=remove_old_gene_link($self->{db},$unique,$gn);
+	    my ($fr,$f_p) = write_feature_relationship( $self->{db}, $doc, 'subject_id',
+                        'object_id', $unique, $gn, 'associated_with', 'unattributed' );
+	    $out.=dom_toString($fr);
+      }
+    } # END new bob
     elsif( exists( $ph{F1f} ) && $ph{F1f} ne 'new' ){
        ( $genus, $species, $type ) =
               get_feat_ukeys_by_uname( $self->{db}, $ph{F1f} );
