@@ -934,7 +934,6 @@ sub write_feature{
         my @gn_list = split('&cap;', @gn_list);
       }
       else {
-        @gn_list = ($ph{F1a});
         print STDERR "ERROR: Can't parse gene for product $ph{F1a}\n";
       }
       my $gn_list_length = scalar @gn_list;
