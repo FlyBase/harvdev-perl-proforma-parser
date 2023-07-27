@@ -930,7 +930,7 @@ sub write_feature{
       $gn=~s/R[A-Z]$//;
       $gn=~s/P[A-Z]$//;
       }
-      elsif ( $type eq 'split system combination' && ph{F1a} =~ /&cap\;/ ) {
+      elsif ( $type eq 'split system combination' && $ph{F1a} =~ /&cap\;/ ) {
         my @gn_list = split('&cap;', @gn_list);
       }
       else {
