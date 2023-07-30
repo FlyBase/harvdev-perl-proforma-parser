@@ -930,7 +930,7 @@ sub write_feature{
       $gn=~s/P[A-Z]$//;
       }
       elsif ( $type eq 'split system combination' && $ph{F1a} =~ /&cap\;/ ) {
-        my @gn_list = split('&cap;', @gn_list);
+        my @gn_list = split('&cap;', $gn);
       }
       else {
         print STDERR "ERROR: Can't parse gene for product $ph{F1a}\n";
