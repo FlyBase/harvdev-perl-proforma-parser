@@ -935,7 +935,7 @@ sub write_feature{
       }
       elsif ( $type eq 'split system combination' && $ph{F1a} =~ /&cap\;/ ) {
         print STDERR "ERROR: BOB: gene detection steps identified this as a split system component feature.\n";
-        my @gn_list = split('&cap;', $gn);
+        @gn_list = split('&cap;', $gn);
         foreach my $i (@gn_list) {
           print STDERR "ERROR: BOB: Have this SSC allele component: $i\n";
         }
