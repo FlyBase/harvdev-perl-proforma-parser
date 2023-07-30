@@ -917,45 +917,45 @@ sub write_feature{
         }
       }
       my $gn=$ph{F1a};
-      print STDERR "ERROR: BOB: starting gene value from F1a: $gn\n";
+      print STDERR "INFO: starting gene value from F1a: $gn\n";
       my @gn_list;
       if($gn=~/[\-XR|\-XP]$/){
       $gn=~s/-XR$//;
       $gn=~s/-XP$//;
 #      $gn=~s/XP$//;
 #      $gn=~s/XR$//;
-      print STDERR "ERROR: BOB: XR/XP condition, now have gene value: $gn\n";
+      print STDERR "INFO: XR/XP condition, now have gene value: $gn\n";
       }
       # elsif ( $gn =~ /[\][P[A-Z|\]R[A-Z]$/){
         elsif ( $gn =~ /(\])(R|P)[A-Z]$/ ) {
 #      $gn=~s/-R[A-Z]$//;
       $gn=~s/R[A-Z]$//;
       $gn=~s/P[A-Z]$//;
-      print STDERR "ERROR: BOB: RA/PA condition, now have gene value: $gn\n";
+      print STDERR "INFO: RA/PA condition, now have gene value: $gn\n";
       }
       elsif ( $type eq 'split system combination' && $ph{F1a} =~ /&cap\;/ ) {
-        print STDERR "ERROR: BOB: gene detection steps identified this as a split system component feature.\n";
+        print STDERR "INFO: split system combination detected.\n";
         @gn_list = split('&cap;', $gn);
         foreach my $i (@gn_list) {
-          print STDERR "ERROR: BOB: Have this SSC allele component: $i\n";
+          print STDERR "INFO: Have this split system combination allele component: $i\n";
         }
       }
       else {
         print STDERR "ERROR: Can't parse gene for product $ph{F1a}\n";
       }
       my $gn_list_length = scalar @gn_list;
-      print STDERR "ERROR: BOB: gene list is this long: $gn_list_length.\n";
+      print STDERR "INFO: gene list is this long: $gn_list_length.\n";
       if ( $gn_list_length > 1 ) {
-        print STDERR "ERROR: BOB: Detected that gene list is > 1.\n";
+        print STDERR "INFO: Detected that gene list is > 1.\n";
         foreach my $split_component (@gn_list) {
-          print STDERR "ERROR: BOB: split system component $split_component is part of $ph{F1a}\n";
+          print STDERR "INFO: split system component $split_component is part of $ph{F1a}\n";
 	      my ($fr,$f_p) = write_feature_relationship( $self->{db}, $doc, 'subject_id',
                           'object_id', $unique, $split_component, 'partially_produced_by', 'unattributed' );
 	      $out.=dom_toString($fr);
         }
       }
       else {
-        print STDERR "gene: $gn HAS PRODUCT: $ph{F1a}\n";
+        print STDERR "INFO: gene: $gn HAS PRODUCT: $ph{F1a}\n";
         ### Write feature_relationship with Gene as partof
         ### Going forward make fr 'associated_with' Aug-03-2011
   	    #$out.=remove_old_gene_link($self->{db},$unique,$gn);
