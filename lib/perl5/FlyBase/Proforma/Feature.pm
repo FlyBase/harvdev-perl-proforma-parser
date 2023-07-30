@@ -890,7 +890,7 @@ sub write_feature{
           $feature = create_ch_feature(
             uniquename => $unique,
             name       => decon( convers( $ph{F1a} ) ),
-            genus      => 'Synthetic',
+            genus      => 'synthetic',
             species    => 'construct',
             type       => $type,
             cvname     => 'FlyBase miscellaneous CV',
