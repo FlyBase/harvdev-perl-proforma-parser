@@ -814,17 +814,16 @@ sub write_feature{
     my $type;
     my $out = '';
     
-    if(!($ph{F1a} =~/[\-XP|\-XR]$/) && !($ph{F1a} =~/[\]P[A-Z]|\]R[A-Z]]$/)){
-        print STDERR "ERROR: F1a $ph{F1a} must end with -XR or -XP or ]PA or ]RA\n";
+    if ( !($ph{F1a} =~/[\-XP|\-XR]$/) && !($ph{F1a} =~/[\]P[A-Z]|\]R[A-Z]]$/) && !($ph{F1a} =~/&cap\;/) ) {
+        print STDERR "ERROR: F1a $ph{F1a} must end with -XR, -XP, ]PA, ]RA, or, contain '&cap;' for a split system combination feature\n";
 		  #return $out;
     }
-
    if( exists( $ph{F1f} ) && $ph{F1f} eq 'new' ){
        if(exists($ph{F2}) && ($ph{F1a} =~/[\-XP|\-XR]$/)){
 	   print STDERR "ERROR: F1a $ph{F1a} cannot end in -XR or -XP if F2 \n";
        }
        if(exists($ph{F3})){
-	   my ($t,$SO)=split(/\s+/,$ph{F3});
+     my ($t, $SO) = split(/\s+(SO:|FBcv:)/, $ph{F3});
 	   $type=$t;
 	   if($type eq 'protein'){
 	       print STDERR "ERROR: Type can not be 'protein', should be 'polypeptide'\n";
@@ -858,7 +857,7 @@ sub write_feature{
         }
         else {
           if(!($ph{F1a}=~/-XR$/) && !($ph{F1a}=~/]R[A-Z]$/)){
-            print STDERR "ERROR: transcript $ph{F1a} should be ended with -XR or RA\n";
+            print STDERR "ERROR: transcript $ph{F1a} should be ended with -XR or RA\n";    # BOB
           }
           ( $unique, $flag ) = get_tempid( 'tr', $ph{F1a} );
         }
