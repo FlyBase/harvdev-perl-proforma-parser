@@ -926,7 +926,8 @@ sub write_feature{
 #      $gn=~s/XR$//;
       print STDERR "ERROR: BOB: XR/XP condition, now have gene value: $gn\n";
       }
-      elsif ($gn=~/[\][P[A-Z|\]R[A-Z]$/){
+      # elsif ( $gn =~ /[\][P[A-Z|\]R[A-Z]$/){
+        elsif ( $gn =~ /(\])(R|P)[A-Z]$/ ) {
 #      $gn=~s/-R[A-Z]$//;
       $gn=~s/R[A-Z]$//;
       $gn=~s/P[A-Z]$//;
@@ -954,7 +955,7 @@ sub write_feature{
         }
       }
       else {
-        print STDERR "gene $gn product $ph{F1a}\n";
+        print STDERR "gene: $gn HAS PRODUCT: $ph{F1a}\n";
         ### Write feature_relationship with Gene as partof
         ### Going forward make fr 'associated_with' Aug-03-2011
   	    #$out.=remove_old_gene_link($self->{db},$unique,$gn);
@@ -962,7 +963,7 @@ sub write_feature{
                         'object_id', $unique, $gn, 'associated_with', 'unattributed' );
 	    $out.=dom_toString($fr);
       }
-    } # END new bob
+    }
     elsif( exists( $ph{F1f} ) && $ph{F1f} ne 'new' ){
        ( $genus, $species, $type ) =
               get_feat_ukeys_by_uname( $self->{db}, $ph{F1f} );
