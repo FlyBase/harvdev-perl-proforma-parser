@@ -857,7 +857,7 @@ sub write_feature{
         }
         else {
           if(!($ph{F1a}=~/-XR$/) && !($ph{F1a}=~/]R[A-Z]$/)){
-            print STDERR "ERROR: transcript $ph{F1a} should be ended with -XR or RA\n";    # BOB
+            print STDERR "ERROR: transcript $ph{F1a} should be ended with -XR or RA\n";
           }
           ( $unique, $flag ) = get_tempid( 'tr', $ph{F1a} );
         }
@@ -890,8 +890,8 @@ sub write_feature{
           $feature = create_ch_feature(
             uniquename => $unique,
             name       => decon( convers( $ph{F1a} ) ),
-            genus      => $genus,
-            species    => $species,
+            genus      => 'Synthetic',
+            species    => 'construct',
             type       => $type,
             cvname     => 'FlyBase miscellaneous CV',
             doc        => $doc,
