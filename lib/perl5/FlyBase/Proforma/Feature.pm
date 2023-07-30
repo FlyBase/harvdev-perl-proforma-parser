@@ -917,17 +917,20 @@ sub write_feature{
         }
       }
       my $gn=$ph{F1a};
+      print STDERR "ERROR: BOB: starting gene value from F1a: $gn\n";
       my @gn_list;
       if($gn=~/[\-XR|\-XP]$/){
       $gn=~s/-XR$//;
       $gn=~s/-XP$//;
 #      $gn=~s/XP$//;
 #      $gn=~s/XR$//;
+      print STDERR "ERROR: BOB: XR/XP condition, now have gene value: $gn\n";
       }
       elsif ($gn=~/[\][P[A-Z|\]R[A-Z]$/){
 #      $gn=~s/-R[A-Z]$//;
       $gn=~s/R[A-Z]$//;
       $gn=~s/P[A-Z]$//;
+      print STDERR "ERROR: BOB: RA/PA condition, now have gene value: $gn\n";
       }
       elsif ( $type eq 'split system combination' && $ph{F1a} =~ /&cap\;/ ) {
         print STDERR "ERROR: BOB: gene detection steps identified this as a split system component feature.\n";
