@@ -930,15 +930,21 @@ sub write_feature{
       $gn=~s/P[A-Z]$//;
       }
       elsif ( $type eq 'split system combination' && $ph{F1a} =~ /&cap\;/ ) {
+        print STDERR "ERROR: BOB: gene detection steps identified this as a split system component feature.\n";
         my @gn_list = split('&cap;', $gn);
+        foreach my $i (@gn_list) {
+          print STDERR "ERROR: BOB: Have this SSC allele component: $i\n";
+        }
       }
       else {
         print STDERR "ERROR: Can't parse gene for product $ph{F1a}\n";
       }
       my $gn_list_length = scalar @gn_list;
+      print STDERR "ERROR: BOB: gene list is this long: $gn_list_length.\n";
       if ( $gn_list_length > 1 ) {
+        print STDERR "ERROR: BOB: Detected that gene list is > 1.\n";
         foreach my $split_component (@gn_list) {
-          print STDERR "split system component $split_component is part of $ph{F1a}\n";
+          print STDERR "ERROR: BOB: split system component $split_component is part of $ph{F1a}\n";
 	      my ($fr,$f_p) = write_feature_relationship( $self->{db}, $doc, 'subject_id',
                           'object_id', $unique, $split_component, 'partially_produced_by', 'unattributed' );
 	      $out.=dom_toString($fr);
