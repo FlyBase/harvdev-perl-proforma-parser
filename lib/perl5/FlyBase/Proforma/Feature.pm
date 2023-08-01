@@ -844,7 +844,7 @@ sub write_feature{
 	    }	      
         }
         if ( $type eq 'split system combination' ) {
-          if( ! $ph{F1a} =~ /&cap\;/ ) {
+          if(!($ph{F1a}=~/&cap\;/)) {
             print STDERR "ERROR: split system combination $ph{F1a} should have '&cap;' "
           }
           ( $unique, $flag ) = get_tempid( 'co', $ph{F1a} );
