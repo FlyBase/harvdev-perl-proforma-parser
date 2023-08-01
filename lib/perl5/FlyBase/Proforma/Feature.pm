@@ -825,6 +825,7 @@ sub write_feature{
        if(exists($ph{F3})){
      my ($t, $SO) = split(/\s+(SO:|FBcv:)/, $ph{F3});
 	   $type=$t;
+     print STDERR "INFO: new feature has been specified to be of type: $type\n";
 	   if($type eq 'protein'){
 	       print STDERR "ERROR: Type can not be 'protein', should be 'polypeptide'\n";
 	   }
@@ -855,11 +856,14 @@ sub write_feature{
           }
           ( $unique, $flag ) = get_tempid( 'pp', $ph{F1a} );
         }
-        else {
+        elsif ( $type=~/RNA$/ ) {
           if(!($ph{F1a}=~/-XR$/) && !($ph{F1a}=~/]R[A-Z]$/)){
             print STDERR "ERROR: transcript $ph{F1a} should be ended with -XR or RA\n";
           }
           ( $unique, $flag ) = get_tempid( 'tr', $ph{F1a} );
+        }
+        else {
+          print STDERR "ERROR: unexpected F3 value: $type\n";
         }
         if(exists($ph{F1c}) && $ph{F1f} eq 'new' && $unique !~/temp/){
 	print STDERR "ERROR: merge feature should have a FB..:temp id not $unique\n";
