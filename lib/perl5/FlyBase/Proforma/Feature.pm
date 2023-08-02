@@ -813,8 +813,8 @@ sub write_feature{
     my $species='melanogaster';
     my $type;
     my $out = '';
-    
-    if ( !($ph{F1a} =~/[\-XP|\-XR]$/) && !($ph{F1a} =~/[\]P[A-Z]|\]R[A-Z]]$/) && !($ph{F1a} =~/&cap\;/) ) {
+    # if ( !($ph{F1a} =~/[\-XP|\-XR]$/) && !($ph{F1a} =~/[\]P[A-Z]|\]R[A-Z]]$/) && !($ph{F1a} =~/&cap\;/) ) {    # BILLY - OLD LINE
+    if ( !($ph{F1a} =~/[\-XP|\-XR]$/) && !($ph{F1a} =~/(\])(R|P)[A-Z]$/) && !($ph{F1a} =~/&cap\;/) ) {
         print STDERR "ERROR: F1a $ph{F1a} must end with -XR, -XP, ]PA, ]RA, or, contain '&cap;' for a split system combination feature\n";
 		  #return $out;
     }
@@ -976,6 +976,7 @@ sub write_feature{
 	 }
        if(!exists($ph{F1b})){
 	   ($unique,$genus,$species,$type)=get_feat_ukeys_by_name($self->{db},$ph{F1a}) ;
+    print STDERR "INFO: $ph{F1a} has uniquename $unique\n";
 	   if($unique ne $ph{F1f}){
 	       print STDERR "ERROR: name and uniquename not match $ph{F1f}  $ph{F1a} \n";
 	       exit(0);
