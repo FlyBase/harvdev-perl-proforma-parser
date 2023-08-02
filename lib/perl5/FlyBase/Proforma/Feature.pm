@@ -954,7 +954,7 @@ sub write_feature{
       my $gn_list_length = scalar @gn_list;
       print STDERR "INFO: gene list is this long: $gn_list_length.\n";
       if ( $gn_list_length > 1 ) {
-        print STDERR "INFO: Detected that gene list is > 1.\n";
+        print STDERR "INFO: Detected that gene list is > 1, must be a split system combination feature.\n";
         foreach my $split_component (@gn_list) {
           print STDERR "INFO: split system component $split_component is part of $ph{F1a}\n";
 	      my ($fr,$f_p) = write_feature_relationship( $self->{db}, $doc, 'subject_id',
