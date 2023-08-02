@@ -849,6 +849,9 @@ sub write_feature{
           if($ph{F1a}=~/AD.+DBD/) {
             print STDERR "ERROR: new split system combination feature $ph{F1a} should list DBD before AD in its name\n";
           }
+          if($ph{F1a}=~/(XR|XP|R[A-Z]|P[A-Z])$/) {
+            print STDERR "ERROR: new split system combination feature $ph{F1a} must not have any XR/XP/RA/PA suffix in its name\n";
+          }
           ( $unique, $flag ) = get_tempid( 'co', $ph{F1a} );
         } 
         elsif ( $type eq 'polypeptide' ) {
