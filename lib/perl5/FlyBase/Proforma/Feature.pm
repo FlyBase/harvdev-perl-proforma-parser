@@ -844,10 +844,10 @@ sub write_feature{
         }
         if ( $type eq 'split system combination' ) {
           if(!($ph{F1a}=~/&cap\;/)) {
-            print STDERR "ERROR: new split system combination feature $ph{F1a} should have '&cap;' in its name\n";
+            print STDERR "ERROR: new split system combination feature $ph{F1a} must have '&cap;' in its name\n";
           }
           if($ph{F1a}=~/AD.+DBD/) {
-            print STDERR "ERROR: new split system combination feature $ph{F1a} should list DBD before AD in its name\n";
+            print STDERR "ERROR: new split system combination feature $ph{F1a} must list DBD before AD in its name\n";
           }
           if($ph{F1a}=~/(XR|XP|R[A-Z]|P[A-Z])$/) {
             print STDERR "ERROR: new split system combination feature $ph{F1a} must not have any XR/XP/RA/PA suffix in its name\n";
