@@ -818,9 +818,12 @@ sub write_feature{
 		  #return $out;
     }
    if( exists( $ph{F1f} ) && $ph{F1f} eq 'new' ){
-       if(exists($ph{F2}) && ($ph{F1a} =~/[\-XP|\-XR]$/)){
-	   print STDERR "ERROR: F1a $ph{F1a} cannot end in -XR or -XP if F2 \n";
-       }
+      if(exists($ph{F2}) && ($ph{F1a} =~/[\-XP|\-XR]$/)){
+	      print STDERR "ERROR: F1a $ph{F1a} cannot end in -XR or -XP if F2 \n";
+      }
+      elsif ( !(exists($ph{F2})) && !($ph{F1a} =~/[\-XP|\-XR]$/) ) {
+	      print STDERR "ERROR: Require F2 value if F1a $ph{F1a} is transgenic (not -XR or -XP)\n";
+      }
        if(exists($ph{F3})){
      my ($t, $SO) = split(/\s+(SO:|FBcv:)/, $ph{F3});
 	   $type=$t;
@@ -828,6 +831,9 @@ sub write_feature{
 	   if($type eq 'protein'){
 	       print STDERR "ERROR: Type can not be 'protein', should be 'polypeptide'\n";
 	   }
+     elsif ( ($type ne 'split system combination') && ($ph{F1a} =~ /(INTERSECTION|&cap\;)/ ) ) {
+       print STDERR "ERROR: split system combination feature $ph{F1a} must have type 'split system combination FBcv:0010025' in F3.\n";
+     }
        }
        else{
 	   print STDERR "ERROR: please specify the feature type for the new feature\n";
@@ -852,6 +858,7 @@ sub write_feature{
           if($ph{F1a}=~/(XR|XP|R[A-Z]|P[A-Z])$/) {
             print STDERR "ERROR: new split system combination feature $ph{F1a} must not have any XR/XP/RA/PA suffix in its name\n";
           }
+
           ( $unique, $flag ) = get_tempid( 'co', $ph{F1a} );
         } 
         elsif ( $type eq 'polypeptide' ) {
