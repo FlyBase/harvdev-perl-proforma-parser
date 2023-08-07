@@ -831,7 +831,7 @@ sub write_feature{
 	   if($type eq 'protein'){
 	       print STDERR "ERROR: Type can not be 'protein', should be 'polypeptide'\n";
 	   }
-     elsif ( !($type ne 'split system combination') && ($ph{F1a} =~ /(INTERSECTION|&cap\;)/ ) ) {
+     elsif ( ($type ne 'split system combination') && ($ph{F1a} =~ /(INTERSECTION|&cap\;)/ ) ) {
        print STDERR "ERROR: split system combination feature $ph{F1a} must have type 'split system combination FBcv:0010025' in F3.\n";
      }
        }
