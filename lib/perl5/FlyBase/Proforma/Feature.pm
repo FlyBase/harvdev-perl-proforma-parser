@@ -818,9 +818,12 @@ sub write_feature{
 		  #return $out;
     }
    if( exists( $ph{F1f} ) && $ph{F1f} eq 'new' ){
-       if(exists($ph{F2}) && ($ph{F1a} =~/[\-XP|\-XR]$/)){
-	   print STDERR "ERROR: F1a $ph{F1a} cannot end in -XR or -XP if F2 \n";
-       }
+      if(exists($ph{F2}) && ($ph{F1a} =~/[\-XP|\-XR]$/)){
+	      print STDERR "ERROR: F1a $ph{F1a} cannot end in -XR or -XP if F2 \n";
+      }
+      elsif ( !(exists($ph{F2})) && !($ph{F1a} =~/[\-XP|\-XR]$/) ) {
+	      print STDERR "ERROR: Require F2 value if F1a $ph{F1a} is transgenic (not -XR or -XP)\n";
+      }
        if(exists($ph{F3})){
      my ($t, $SO) = split(/\s+(SO:|FBcv:)/, $ph{F3});
 	   $type=$t;
