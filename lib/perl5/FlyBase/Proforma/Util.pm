@@ -265,15 +265,6 @@ sub trim {
     return wantarray ? @s : $s[0];
 }
 
-#sub trim
-#{
-#	my $string = shift;
-#	$string =~ s/^\s+//;
-#	$string =~ s/\s+$//;
-#	return $string;
-#
-#}
-
 sub validate_new_gene_name {
     my $dbh  = shift;
     my $name = shift;
