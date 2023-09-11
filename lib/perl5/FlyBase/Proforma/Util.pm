@@ -265,15 +265,6 @@ sub trim {
     return wantarray ? @s : $s[0];
 }
 
-#sub trim
-#{
-#	my $string = shift;
-#	$string =~ s/^\s+//;
-#	$string =~ s/\s+$//;
-#	return $string;
-#
-#}
-
 sub validate_new_gene_name {
     my $dbh  = shift;
     my $name = shift;
@@ -4020,6 +4011,22 @@ sub delete_table_relationship {
                 $fbids{ $fr_h{name} } = $uniquename;
             }
         }
+        elsif ( $type eq 'split system combination' ) {
+            $feature = &$create_function(
+                doc        => $doc,
+                uniquename => $uniquename,
+                type       => $type,
+                cvname     => 'FlyBase miscellaneous CV',
+                genus      => $genus,
+                species    => $species,
+                macro_id   => $uniquename
+            );
+            if ( defined($is_obsolete) && $is_obsolete eq 'f' ) {
+                $fbids{ $fr_h{name} } = $uniquename;
+            }
+        }
+
+
         else {
             $feature = &$create_function(
                 doc        => $doc,
@@ -10916,18 +10923,35 @@ sub merge_records {
             $fbids{$nn} = $unique;
             $out .= feature_name_change_action( $dbh, $doc, $id, $id, $a1, $p );
             if ( $g ne '0' ) {
-                my $feat = create_ch_feature(
-                    doc         => $doc,
-                    uniquename  => $id,
-                    genus       => $g,
-                    species     => $s,
-                    no_lookup   => 1,
-                    type        => $t,
-                    is_obsolete => 't',
-                    macro_id    => $id
-                );
-                $out .= dom_toString($feat);
-                $feat->dispose();
+                if ( $t eq 'split system combination' ) {
+                    my $feat = create_ch_feature(
+                        doc         => $doc,
+                        uniquename  => $id,
+                        genus       => $g,
+                        species     => $s,
+                        no_lookup   => 1,
+                        type        => $t,
+                        cvname     => 'FlyBase miscellaneous CV',
+                        is_obsolete => 't',
+                        macro_id    => $id
+                    );
+                    $out .= dom_toString($feat);
+                    $feat->dispose();
+                }
+                else {
+                    my $feat = create_ch_feature(
+                        doc         => $doc,
+                        uniquename  => $id,
+                        genus       => $g,
+                        species     => $s,
+                        no_lookup   => 1,
+                        type        => $t,
+                        is_obsolete => 't',
+                        macro_id    => $id
+                    );
+                    $out .= dom_toString($feat);
+                    $feat->dispose();
+                }
             }
             else {
                 print STDERR
@@ -18676,6 +18700,7 @@ sub toutf {
 
     # $string=~s/\(/\\\(/g;
     # $string=~s/\)/\\\)/g;
+    $string =~ s/&cap\;/\x{2229}/g;    # Intersection character for split-Gal4 combinations.
     $string =~ s/&agr\;/\x{03B1}/g;
     $string =~ s/&Agr\;/\x{0391}/g;
     $string =~ s/&bgr\;/\x{03B2}/g;
@@ -18740,6 +18765,7 @@ sub utftog {
     my ($string) = $_[0];
 
     #print STDERR "string=$string\n";
+    $string =~ s/[\x{2229}]/&cap;/g;    # Intersection character for split-Gal4 combinations
     $string =~ s/[\x{03B1}]/&agr;/g;
     $string =~ s/[\x{0391}]/&Agr;/g;
     $string =~ s/[\x{03B2}]/&bgr;/g;
@@ -18803,6 +18829,7 @@ sub recon {
 
     my ($string) = $_[0];
 
+    $string =~ s/INTERSECTION/&cap\;/g;    # Intersection character for split-Gal4 combinations.
     $string =~ s/alpha/&agr\;/g;
     $string =~ s/Alpha/&Agr\;/g;
     $string =~ s/beta/&bgr\;/g;
@@ -18868,6 +18895,7 @@ sub decon {
 
     my $string = $_[0];
 
+    $string =~ s/&cap\;/INTERSECTION/g;    # Intersection character for split-Gal4 combinations.
     $string =~ s/&agr\;/alpha/g;
     $string =~ s/&Agr\;/Alpha/g;
     $string =~ s/&bgr\;/beta/g;
