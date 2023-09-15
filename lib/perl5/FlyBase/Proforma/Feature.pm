@@ -832,7 +832,7 @@ sub write_feature{
 	       print STDERR "ERROR: Type can not be 'protein', should be 'polypeptide'\n";
 	   }
      elsif ( ($type ne 'split system combination') && ($ph{F1a} =~ /(INTERSECTION|&cap\;)/ ) ) {
-       print STDERR "ERROR: split system combination feature $ph{F1a} must have type 'split system combination FBcv:0010025' in F3.\n";
+       print STDERR "ERROR: split system combination feature $ph{F1a} must have type 'split system combination FBcv:0009026' in F3.\n";
      }
        }
        else{
@@ -853,7 +853,7 @@ sub write_feature{
             print STDERR "ERROR: new split system combination feature $ph{F1a} must have '&cap;' in its name\n";
           }
           if(!($ph{F1a}=~/DBD.+AD/)) {
-            print STDERR "ERROR: new split system combination feature $ph{F1a} must list DBD before AD in its name\n";
+            print STDERR "INFO: new split system combination feature $ph{F1a} must list DBD before AD; cannot detect this using its name (Peeves will have done checks for this so should be OK)\n";
           }
           if($ph{F1a}=~/(XR|XP|R[A-Z]|P[A-Z])$/) {
             print STDERR "ERROR: new split system combination feature $ph{F1a} must not have any XR/XP/RA/PA suffix in its name\n";
