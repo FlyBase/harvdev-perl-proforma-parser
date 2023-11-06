@@ -113,7 +113,7 @@ our %ti_fpr_type = (
     'G14a', 'misc',                                     #featureprop
     'G14b', 'identified_by',                            #featureprop
     'G28a', 'gene_relationships',                       #featureprop
-    'G28b', 'merge_source/identity_source',             #featureprop
+    'G28b', 'merge_source/identity_source',             #featureprop BOB
     'G29a',
     'fnally_comps/fnally_noncomps/fnally_partcomps/gain_of_fn_species'
     ,    #feature_relationship.object_id, featureprop
