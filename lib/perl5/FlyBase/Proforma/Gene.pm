@@ -114,6 +114,7 @@ our %ti_fpr_type = (
     'G14b', 'identified_by',                            #featureprop
     'G28a', 'gene_relationships',                       #featureprop
     'G28b', 'merge_source/identity_source',             #featureprop
+    'G41', 'gene_nomenclature_comment',                 #featureprop
     'G29a',
     'fnally_comps/fnally_noncomps/fnally_partcomps/gain_of_fn_species'
     ,    #feature_relationship.object_id, featureprop
@@ -800,6 +801,7 @@ sub process {
             || $f eq 'G14b'
             || $f eq 'G28a'
             || $f eq 'G28b'
+            || $f eq 'G41'
             || $f eq 'G29b'
             || $f eq 'G24e'
             || $f eq 'G24g'
@@ -1967,6 +1969,7 @@ sub validate {
                 || $f eq 'G14b'
                 || $f eq 'G28a'
                 || $f eq 'G28b'
+                || $f eq 'G41'
                 || $f eq 'G29b'
                 || $f eq 'G24e'
                 || $f eq 'G15'
