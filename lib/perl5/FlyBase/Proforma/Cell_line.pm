@@ -11,7 +11,7 @@ use Carp qw(croak);
 our @ISA = qw(Exporter);
 
 # Items to export into callers namespace by default. Note: do not export
-# names by default without a very good reason. Use EXPORT_OK instead.
+# names by default without a very very very good reason. Use EXPORT_OK instead.
 # Do not simply export all your public functions/methods/constants.
 
 # This allows declaration	use FlyBase::Proforma::Cell_line ':all';
