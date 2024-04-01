@@ -230,7 +230,7 @@ sub process {
             }
 	  if(defined ($ph{$f}) && $ph{$f} ne ''){
           # see PDEV-228
-          $tc1a = $ph{TC1a};
+          my $tc1a = $ph{TC1a};
           $tc1a =~ s/^\s+//;
           $tc1a =~ s/\s+$//;
 	    my @items = split( /\n/, $ph{$f} );
