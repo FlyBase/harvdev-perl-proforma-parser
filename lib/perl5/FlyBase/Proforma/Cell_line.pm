@@ -231,6 +231,7 @@ sub process {
 	  if(defined ($ph{$f}) && $ph{$f} ne ''){
 	    my @items = split( /\n/, $ph{$f} );
             foreach my $item (@items) {
+                # see PDEV-228
                 if($item == $ph{'TC1a'}){
                     next;
                 }
