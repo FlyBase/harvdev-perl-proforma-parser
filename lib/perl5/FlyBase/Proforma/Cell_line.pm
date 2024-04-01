@@ -238,7 +238,7 @@ sub process {
                 $item =~ s/^\s+//;
                 $item =~ s/\s+$//;
                 # see PDEV-228
-                if($item == $tc1a){
+                if($item eq $tc1a){
                     next;
                 }
                 my $t = $f;
