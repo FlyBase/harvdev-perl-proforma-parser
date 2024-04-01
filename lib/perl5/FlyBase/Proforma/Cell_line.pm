@@ -231,6 +231,9 @@ sub process {
 	  if(defined ($ph{$f}) && $ph{$f} ne ''){
 	    my @items = split( /\n/, $ph{$f} );
             foreach my $item (@items) {
+                if($item == $ph{'TC1a'}){
+                    next;
+                }
                 $item =~ s/^\s+//;
                 $item =~ s/\s+$//;
                 my $t = $f;
