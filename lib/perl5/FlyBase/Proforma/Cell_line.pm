@@ -229,10 +229,18 @@ sub process {
               #        delete_cell_line_synonym( $self->{db}, $doc, $unique, $ph{pub}, $fpr_type{$f} );
             }
 	  if(defined ($ph{$f}) && $ph{$f} ne ''){
+          # see PDEV-228
+          my $tc1a = $ph{TC1a};
+          $tc1a =~ s/^\s+//;
+          $tc1a =~ s/\s+$//;
 	    my @items = split( /\n/, $ph{$f} );
             foreach my $item (@items) {
                 $item =~ s/^\s+//;
                 $item =~ s/\s+$//;
+                # see PDEV-228
+                if($item eq $tc1a){
+                    next;
+                }
                 my $t = $f;
                 $t =~ s/TC1//;
                     my $tt     = $t;
