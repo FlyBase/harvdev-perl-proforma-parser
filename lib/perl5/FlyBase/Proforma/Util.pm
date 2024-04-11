@@ -5069,7 +5069,8 @@ sub check_al_with_fr_or_mutagen {
 		where feature.uniquename='$fb_id' and
 		feature.feature_id=fcv.feature_id and
 		cvterm.cvterm_id=fcv.cvterm_id and
-		cvterm.name like 'in vitro construct%';";
+        cvterm.is_obsolete = 0 and
+		cvterm.name = 'in vitro construct';";
 
         #	print "$state\n";
         my $nmm = $dbh->prepare($state);
