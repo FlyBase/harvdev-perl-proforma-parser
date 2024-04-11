@@ -331,7 +331,7 @@ sub process {
     }
     if (   defined( $ph{GA8} )
         && $ph{GA8} ne ''
-        && $ph{GA8} =~ /in vitro construct/ )
+        && $ph{GA8} eq 'in vitro construct' )
     {
         $group = 1;
     }
