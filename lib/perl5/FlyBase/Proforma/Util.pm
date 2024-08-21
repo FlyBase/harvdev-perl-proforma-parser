@@ -230,6 +230,7 @@ our %curator = (
     'vj',    'V. Jenkins',        'sp',     'S. Pop',
     'ao',    'A. Ozturk-Colak',   'am',     'A. McLachlan',
     'tl',    'T. Lovato',         'dg',     'D. Goutte-Gattat',
+    'rz',    'R. Zaru',
 );
 
 my $libs =
