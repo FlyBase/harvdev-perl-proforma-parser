@@ -2209,24 +2209,25 @@ sub get_feat_ukeys_by_id {
     my $type    = '';
     my $fbid    = '';
     my $is      = '';
+    my $cv_name = '';
 
     #print STDERR "get_feat_ukeys $id\n";
     my $statement = "select uniquename,organism.genus,
-  organism.species,cvterm.name, feature.is_obsolete from feature,organism,cvterm where
+  organism.species,cvterm.name, feature.is_obsolete, cv.name from feature,organism,cvterm,cv where
   feature.feature_id=$id and feature.organism_id=organism.organism_id
-	  and cvterm.cvterm_id=feature.type_id;";
+	  and cvterm.cvterm_id=feature.type_id AND cv.cv_id = cvterm.cv_id;";
 
     #print STDERR $statement;
     my $nmm = $dbh->prepare($statement);
     $nmm->execute;
 
-    ( $fbid, $genus, $species, $type, $is ) = $nmm->fetchrow_array;
+    ( $fbid, $genus, $species, $type, $is, $cv_name ) = $nmm->fetchrow_array;
 
     #      if($is eq '1' && $type ne 'EST'){
     #   return '0';
     #    }
 
-    return ( $fbid, $genus, $species, $type );
+    return ( $fbid, $genus, $species, $type, $is, $cv_name );
 }
 
 sub get_lib_ukeys_by_id {
@@ -3957,7 +3958,7 @@ sub delete_table_relationship {
 
     my %fr_h = %$t;
     my $out  = '';
-    my ( $uniquename, $genus, $species, $type, $is_obsolete ) = '';
+    my ( $uniquename, $genus, $species, $type, $is_obsolete, $cv_name) = '';
 
     my $get_ukey_function = 'get_feat_ukeys_by_id';
     if ( $table eq 'library' ) {
@@ -3986,7 +3987,7 @@ sub delete_table_relationship {
           &$get_ukey_function( $dbh, $fr_h{grp_id} );
     }
     else {
-        ( $uniquename, $genus, $species, $type, $is_obsolete ) =
+        ( $uniquename, $genus, $species, $type, $is_obsolete, $cv_name ) =
           &$get_ukey_function( $dbh, $fr_h{feature_id} );
     }
 
@@ -4012,27 +4013,26 @@ sub delete_table_relationship {
                 $fbids{ $fr_h{name} } = $uniquename;
             }
         }
-        elsif ( $type eq 'split system combination' ) {
-            $feature = &$create_function(
-                doc        => $doc,
-                uniquename => $uniquename,
-                type       => $type,
-                cvname     => 'FlyBase miscellaneous CV',
-                genus      => $genus,
-                species    => $species,
-                macro_id   => $uniquename
-            );
-            if ( defined($is_obsolete) && $is_obsolete eq 'f' ) {
-                $fbids{ $fr_h{name} } = $uniquename;
-            }
-        }
-
-
+        # elsif ( $type eq 'split system combination' ) {
+        #     $feature = &$create_function(
+        #         doc        => $doc,
+        #         uniquename => $uniquename,
+        #         type       => $type,
+        #         cvname     => 'FlyBase miscellaneous CV',
+        #         genus      => $genus,
+        #         species    => $species,
+        #         macro_id   => $uniquename
+        #     );
+        #     if ( defined($is_obsolete) && $is_obsolete eq 'f' ) {
+        #         $fbids{ $fr_h{name} } = $uniquename;
+        #     }
+        # }
         else {
             $feature = &$create_function(
                 doc        => $doc,
                 uniquename => $uniquename,
                 type       => $type,
+                cvname     => $cv_name,
                 genus      => $genus,
                 species    => $species,
                 macro_id   => $uniquename
@@ -4199,33 +4199,42 @@ sub delete_table_relationship_pub {
     }
 
     if ( $table eq 'library' || $table eq 'feature' ) {
-        ( $uniquename, my $genus, my $species, my $type ) =
+        ( $uniquename, my $genus, my $species, my $type, my $is_obsolete, my $cv_name) =
           &$get_uniquename_function( $dbh, $fr_h{ $table . "_id" } );
         if ( $uniquename eq '0' ) {
             print STDERR
 "ERROR: feature/library has been deleted in function delete_table_relationship_pub\n";
         }
-        if ($type eq 'split system combination') {
-            $feature = &$create_function(
-            doc        => $doc,
-            uniquename => $uniquename,
-            type       => $type,
-            cvname     => 'FlyBase miscellaneous CV',
-            genus      => $genus,
-            species    => $species,
-            macro_id   => $uniquename
-            );
-        }
-        else {
-            $feature = &$create_function(
-            doc        => $doc,
-            uniquename => $uniquename,
-            type       => $type,
-            genus      => $genus,
-            species    => $species,
-            macro_id   => $uniquename
-            );
-        }
+        $feature = &$create_function(
+        doc        => $doc,
+        uniquename => $uniquename,
+        type       => $type,
+        cvname     => $cv_name,
+        genus      => $genus,
+        species    => $species,
+        macro_id   => $uniquename
+        );
+        # if ($type eq 'split system combination') {
+        #     $feature = &$create_function(
+        #     doc        => $doc,
+        #     uniquename => $uniquename,
+        #     type       => $type,
+        #     cvname     => $cv_name,
+        #     genus      => $genus,
+        #     species    => $species,
+        #     macro_id   => $uniquename
+        #     );
+        # }
+        # else {
+        #     $feature = &$create_function(
+        #     doc        => $doc,
+        #     uniquename => $uniquename,
+        #     type       => $type,
+        #     genus      => $genus,
+        #     species    => $species,
+        #     macro_id   => $uniquename
+        #     );
+        # }
     }
     elsif ( $table eq 'grp' ) {
         ( $uniquename, my $type ) =
@@ -18631,7 +18640,7 @@ sub delete_library_relationship_alltype {
     #    my $fr_type = shift;
     my %fr_h = %$t;
     my $out  = '';
-    my ( $uniquename, $genus, $species, $type, $is_obsolete ) = '';
+    my ( $uniquename, $genus, $species, $type, $is_obsolete, $cv_name ) = '';
 
     my $get_ukey_function = 'get_lib_ukeys_by_id';
     ( $uniquename, $genus, $species, $type, $is_obsolete ) =
