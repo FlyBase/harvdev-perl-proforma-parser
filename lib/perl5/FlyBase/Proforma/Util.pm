@@ -2215,7 +2215,7 @@ sub get_feat_ukeys_by_id {
     my $statement = "select uniquename,organism.genus,
   organism.species,cvterm.name, feature.is_obsolete, cv.name from feature,organism,cvterm,cv where
   feature.feature_id=$id and feature.organism_id=organism.organism_id
-	  and cvterm.cvterm_id=feature.type_id AND cv.cv_id = cvt.cv_id;";
+	  and cvterm.cvterm_id=feature.type_id AND cv.cv_id = cvterm.cv_id;";
 
     #print STDERR $statement;
     my $nmm = $dbh->prepare($statement);
