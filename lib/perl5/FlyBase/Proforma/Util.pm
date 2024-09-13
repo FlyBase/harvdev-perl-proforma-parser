@@ -3957,7 +3957,7 @@ sub delete_table_relationship {
 
     my %fr_h = %$t;
     my $out  = '';
-    my ( $uniquename, $genus, $species, $type, $is_obsolete ) = '';
+    my ( $uniquename, $genus, $species, $type, $is_obsolete, $cv_name) = '';
 
     my $get_ukey_function = 'get_feat_ukeys_by_id';
     if ( $table eq 'library' ) {
@@ -18639,7 +18639,7 @@ sub delete_library_relationship_alltype {
     #    my $fr_type = shift;
     my %fr_h = %$t;
     my $out  = '';
-    my ( $uniquename, $genus, $species, $type, $is_obsolete ) = '';
+    my ( $uniquename, $genus, $species, $type, $is_obsolete, $cv_name ) = '';
 
     my $get_ukey_function = 'get_lib_ukeys_by_id';
     ( $uniquename, $genus, $species, $type, $is_obsolete ) =
