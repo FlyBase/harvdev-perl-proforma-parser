@@ -2209,6 +2209,7 @@ sub get_feat_ukeys_by_id {
     my $type    = '';
     my $fbid    = '';
     my $is      = '';
+    my $cv_name = '';
 
     #print STDERR "get_feat_ukeys $id\n";
     my $statement = "select uniquename,organism.genus,
