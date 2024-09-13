@@ -4032,7 +4032,7 @@ sub delete_table_relationship {
                 doc        => $doc,
                 uniquename => $uniquename,
                 type       => $type,
-                cvname     => $cv_name
+                cvname     => $cv_name,
                 genus      => $genus,
                 species    => $species,
                 macro_id   => $uniquename
