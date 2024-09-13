@@ -4205,14 +4205,27 @@ sub delete_table_relationship_pub {
             print STDERR
 "ERROR: feature/library has been deleted in function delete_table_relationship_pub\n";
         }
-        $feature = &$create_function(
+        if ($type eq 'split system combination') {
+            $feature = &$create_function(
+            doc        => $doc,
+            uniquename => $uniquename,
+            type       => $type,
+            cvname     => 'FlyBase miscellaneous CV',
+            genus      => $genus,
+            species    => $species,
+            macro_id   => $uniquename
+            );
+        }
+        else {
+            $feature = &$create_function(
             doc        => $doc,
             uniquename => $uniquename,
             type       => $type,
             genus      => $genus,
             species    => $species,
             macro_id   => $uniquename
-        );
+            );
+        }
     }
     elsif ( $table eq 'grp' ) {
         ( $uniquename, my $type ) =
