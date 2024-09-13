@@ -510,7 +510,7 @@ sub process {
                     }
                     elsif ( $num > 1 ) {
                         $out .=
-                          delete_featureprop_pub( $doc, $t, $unique,
+                          delete_featureprop_pub( $doc, $t->{rank}, $unique,
                             $ti_fpr_type{$f}, $ph{pub} );
                     }
                     else {
