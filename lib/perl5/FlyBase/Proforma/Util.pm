@@ -4013,20 +4013,6 @@ sub delete_table_relationship {
                 $fbids{ $fr_h{name} } = $uniquename;
             }
         }
-        # elsif ( $type eq 'split system combination' ) {
-        #     $feature = &$create_function(
-        #         doc        => $doc,
-        #         uniquename => $uniquename,
-        #         type       => $type,
-        #         cvname     => 'FlyBase miscellaneous CV',
-        #         genus      => $genus,
-        #         species    => $species,
-        #         macro_id   => $uniquename
-        #     );
-        #     if ( defined($is_obsolete) && $is_obsolete eq 'f' ) {
-        #         $fbids{ $fr_h{name} } = $uniquename;
-        #     }
-        # }
         else {
             $feature = &$create_function(
                 doc        => $doc,
@@ -4214,27 +4200,6 @@ sub delete_table_relationship_pub {
         species    => $species,
         macro_id   => $uniquename
         );
-        # if ($type eq 'split system combination') {
-        #     $feature = &$create_function(
-        #     doc        => $doc,
-        #     uniquename => $uniquename,
-        #     type       => $type,
-        #     cvname     => $cv_name,
-        #     genus      => $genus,
-        #     species    => $species,
-        #     macro_id   => $uniquename
-        #     );
-        # }
-        # else {
-        #     $feature = &$create_function(
-        #     doc        => $doc,
-        #     uniquename => $uniquename,
-        #     type       => $type,
-        #     genus      => $genus,
-        #     species    => $species,
-        #     macro_id   => $uniquename
-        #     );
-        # }
     }
     elsif ( $table eq 'grp' ) {
         ( $uniquename, my $type ) =
