@@ -4192,13 +4192,13 @@ sub delete_table_relationship_pub {
 "ERROR: feature/library has been deleted in function delete_table_relationship_pub\n";
         }
         $feature = &$create_function(
-        doc        => $doc,
-        uniquename => $uniquename,
-        type       => $type,
-        cvname     => $cv_name,
-        genus      => $genus,
-        species    => $species,
-        macro_id   => $uniquename
+            doc        => $doc,
+            uniquename => $uniquename,
+            type       => $type,
+            cvname     => $cv_name,
+            genus      => $genus,
+            species    => $species,
+            macro_id   => $uniquename
         );
     }
     elsif ( $table eq 'grp' ) {
