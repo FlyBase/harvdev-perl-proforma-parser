@@ -955,9 +955,6 @@ sub parse_dataset {
 #                      print STDERR "DEBUG: new accession in GG8a $affgene{GG8a} $affgene{GG8b}\n";
                         if ( defined( $affgene{GG8c} ) && $affgene{GG8c} ne '' )
                         {
-
-
-
                             print STDERR
 "DEBUG: $dbname $affgene{GG8a} description GG8c $affgene{GG8c}\n";
                             $descr = $affgene{GG8c};

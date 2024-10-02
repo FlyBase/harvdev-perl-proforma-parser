@@ -9,7 +9,6 @@ The purpose of this repository is to make the original parser code more readily 
 - Files are obtained and updated from the Harvdev CVS location: `/fb_cvs/FB/modules/FlyBase-Proforma`
 - As of now, this is a "one way" update of the original parser. In other words, changes from the CVS are pushed to GitHub but any GitHub changes **will not** be pushed back to CVS. Please **do not** edit this repository and expect the changes to be reflected at Harvdev.
 
-
 ## Use
 
 
