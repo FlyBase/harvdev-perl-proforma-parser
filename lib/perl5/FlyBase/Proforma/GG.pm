@@ -104,6 +104,7 @@ our %ti_fpr_type = (
     'GG11', 'gg_review_date',       #grpprop
     'GG12', 'gg_internal_notes',    #grpprop
     'GG13', 'gg_pathway_abstract',  #grpprop
+    'GG14', 'GO-CAM',               #grp_dbxref
     );
 
 my $doc = new XML::DOM::Document();
@@ -452,6 +453,32 @@ sub process {
                             $ti_fpr_type{$f}, $ph{pub} );
                     }
                 }
+            }
+        }
+        elsif ( $f eq 'GG14') {
+            if ( exists( $ph{"$f.upd"} ) && $ph{"$f.upd"} eq 'c' ) {
+                print STDERR "ERROR:: !c log, $ph{GG14} $f  $ph{pub} Not programmed yet\n";
+            }
+            else {
+                my $dbname = $ti_fpr_type{$f};
+                my $dbxref = $ph{GG14};
+                my $dbxref_dom = create_ch_dbxref(
+                    doc         => $doc,
+                    accession   => $dbxref,
+                    db          => $dbname,
+                    version     => '1',
+                    description => '',
+                    macro_id    => $dbname . $dbxref,
+                    no_lookup   => 1
+                );
+                # $fbdbs{ $dbname . $dbxref } = $dbname . $ph{GG14};
+                $out .= dom_toString($dbxref_dom);
+                my $fd = create_ch_grp_dbxref(
+                    doc       => $doc,
+                    grp_id    => $unique,
+                    dbxref_id => $dbname . $dbxref
+                );
+                $out .= dom_toString($fd);
             }
         }
         elsif ( $f eq 'GG4' ) {
@@ -928,6 +955,9 @@ sub parse_dataset {
 #                      print STDERR "DEBUG: new accession in GG8a $affgene{GG8a} $affgene{GG8b}\n";
                         if ( defined( $affgene{GG8c} ) && $affgene{GG8c} ne '' )
                         {
+
+
+
                             print STDERR
 "DEBUG: $dbname $affgene{GG8a} description GG8c $affgene{GG8c}\n";
                             $descr = $affgene{GG8c};
