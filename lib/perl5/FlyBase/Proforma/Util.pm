@@ -11277,7 +11277,8 @@ sub merge_records {
             if ( $fr_hash->{type} eq 'object_id' ) {
                 $subject_id = 'object_id';
                 $object_id  = 'subject_id';
-                $fr_subject = $fr_hash->{object_id};
+                # Why state this again? Maybe needs to be subject?
+                $fr_subject = $fr_hash->{subject_id};
             }
             my $o_u = '';
             if ( defined( $fr_hash->{name} ) ) {
@@ -11341,6 +11342,7 @@ sub merge_records {
 
             $fr_obj = create_ch_fr(
                 doc         => $doc,
+
                 $object_id  => $o_u,
                 $subject_id => $unique,
                 rtype       => $fr_hash->{frtype},
