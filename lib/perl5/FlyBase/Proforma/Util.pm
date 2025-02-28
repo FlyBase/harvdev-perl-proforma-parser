@@ -11238,24 +11238,41 @@ sub merge_records {
         # print STDERR "done featureprop\n";
         ###get feature_relationship,fr_pub,frprop,frprop_pub
         my $fr_state =
-            "select 'subject_id' as type, fr.feature_relationship_id, "
-          . "f1.feature_id as subject_id, f2.name as name,"
-          . " f2.feature_id as "
-          . "object_id, cvterm.name as frtype,rank from "
-          . "feature_relationship fr, "
-          . "feature f1, feature f2, cvterm where "
-          . "cvterm.cvterm_id=fr.type_id and "
-          . "fr.subject_id=f1.feature_id and "
-          . "fr.object_id=f2.feature_id and f1.is_obsolete = false and f1.uniquename='$id' "
-          . "union "
-          . "select 'object_id' as type, fr.feature_relationship_id, f2.feature_id as "
-          . "subject_id, f1.name as name, f1.feature_id as "
-          . "object_id, cvterm.name as frtype, rank from "
-          . "feature_relationship fr, "
-          . "feature f1, feature f2, cvterm where "
-          . "cvterm.cvterm_id=fr.type_id and "
-          . "fr.subject_id=f1.feature_id and "
-          . "fr.object_id=f2.feature_id and f2.is_obsolete = false and f2.uniquename='$id'";
+            "SELECT 'subject_id' as type,
+                     fr.feature_relationship_id,
+                     f1.feature_id as subject_id,
+                     f2.name as name,
+                     f2.feature_id as object_id,
+                     cvterm.name as frtype,
+                     rank
+              FROM feature_relationship fr,
+                   feature f1,
+                   feature f2,
+                   cvterm
+              WHERE
+                cvterm.cvterm_id=fr.type_id and
+                fr.subject_id=f1.feature_id and
+                fr.object_id=f2.feature_id and
+                f1.is_obsolete = false and
+                f1.uniquename='$id'
+            UNION
+              SELECT 'object_id' as type,
+                fr.feature_relationship_id,
+                f2.feature_id as subject_id,
+                f1.name as name,
+                f1.feature_id as object_id,
+                cvterm.name as frtype,
+                rank
+              FROM feature_relationship fr
+                   feature f1,
+                   feature f2,
+                   cvterm
+              WHERE
+                cvterm.cvterm_id=fr.type_id and
+                fr.subject_id=f1.feature_id and
+                fr.object_id=f2.feature_id and
+                f2.is_obsolete = false and
+                f2.uniquename='$id'";
 
         # print STDERR $fr_state;
 
@@ -11268,8 +11285,8 @@ sub merge_records {
                 last;
             }
 
-           #print STDERR $fr_hash->{type}, " object_id ", $fr_hash->{object_id},
-           #   " subject_id ", $fr_hash->{subject_id}, "\n";
+           print STDERR $fr_hash->{type}, " object_id ", $fr_hash->{object_id},
+              " subject_id ", $fr_hash->{subject_id}, $fr_hash->{name}, "\n";
 
             my $subject_id = 'subject_id';
             my $object_id  = 'object_id';
@@ -11277,8 +11294,6 @@ sub merge_records {
             if ( $fr_hash->{type} eq 'object_id' ) {
                 $subject_id = 'object_id';
                 $object_id  = 'subject_id';
-                # Why state this again? Maybe needs to be subject?
-                $fr_subject = $fr_hash->{subject_id};
             }
             my $o_u = '';
             if ( defined( $fr_hash->{name} ) ) {
