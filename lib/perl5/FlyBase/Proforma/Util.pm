@@ -11263,7 +11263,7 @@ sub merge_records {
                 f1.feature_id as object_id,
                 cvterm.name as frtype,
                 rank
-              FROM feature_relationship fr
+              FROM feature_relationship fr,
                    feature f1,
                    feature f2,
                    cvterm
