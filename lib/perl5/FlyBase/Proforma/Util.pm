@@ -11275,7 +11275,7 @@ sub merge_records {
                 f2.uniquename='$id'
 END_SQL
 
-        # print STDERR $fr_state;
+        print STDERR $fr_state;
 
         my $fr_nmm = $dbh->prepare($fr_state);
         $fr_nmm->execute;
