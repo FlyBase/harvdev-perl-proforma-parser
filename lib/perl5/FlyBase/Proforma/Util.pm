@@ -11237,8 +11237,8 @@ sub merge_records {
 
         # print STDERR "done featureprop\n";
         ###get feature_relationship,fr_pub,frprop,frprop_pub
-        my $fr_state =
-            "SELECT 'subject_id' as type,
+        my $fr_state = << "END_SQL";
+            SELECT 'subject_id' as type,
                      fr.feature_relationship_id,
                      f1.feature_id as subject_id,
                      f2.name as name,
@@ -11272,7 +11272,8 @@ sub merge_records {
                 fr.subject_id=f1.feature_id and
                 fr.object_id=f2.feature_id and
                 f2.is_obsolete = false and
-                f2.uniquename='$id'";
+                f2.uniquename='$id'
+END_SQL
 
         # print STDERR $fr_state;
 
