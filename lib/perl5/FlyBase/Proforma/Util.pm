@@ -11242,6 +11242,7 @@ sub merge_records {
                      fr.feature_relationship_id,
                      f1.feature_id as subject_id,
                      f2.name as name,
+                     f2.uniquename as uniquename,
                      f2.feature_id as object_id,
                      cvterm.name as frtype,
                      rank
@@ -11260,6 +11261,7 @@ sub merge_records {
                 fr.feature_relationship_id,
                 f2.feature_id as subject_id,
                 f1.name as name,
+                f1.uniquename as uniquename,
                 f1.feature_id as object_id,
                 cvterm.name as frtype,
                 rank
@@ -11275,19 +11277,23 @@ sub merge_records {
                 f2.uniquename='$id'
 END_SQL
 
-        print STDERR $fr_state;
+        # print STDERR $fr_state;
 
         my $fr_nmm = $dbh->prepare($fr_state);
         $fr_nmm->execute;
 
+        # PDEV-251 we know there is an problem with features with the same name
+        # being merged here BUT we have validation checks that find these
+        # and the fix would be complicated and take too mucj time.
+        # Bug seen 8 times in 5 years so should be okay.
         while ( my ($fr_hash) = $fr_nmm->fetchrow_hashref ) {
             my $fr_obj;
             if ( !defined( $fr_hash->{object_id} ) ) {
                 last;
             }
 
-           print STDERR $fr_hash->{type}, " object_id ", $fr_hash->{object_id},
-              " subject_id ", $fr_hash->{subject_id}, $fr_hash->{name}, "\n";
+           # print STDERR $fr_hash->{type}, " object_id ", $fr_hash->{object_id},
+           #   " subject_id ", $fr_hash->{subject_id}, " name ", $fr_hash->{name}, " frtype ", $fr_hash->{frtype}, "\n";
 
             my $subject_id = 'subject_id';
             my $object_id  = 'object_id';
@@ -11321,6 +11327,7 @@ END_SQL
                         next;
                     }
 
+                    # print STDERR "DEBUG: $o_u, $o_g, $o_s, $o_t\n";
                     my $feature_ob = create_ch_feature(
                         doc        => $doc,
                         uniquename => $o_u,
