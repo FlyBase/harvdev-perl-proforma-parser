@@ -11237,39 +11237,63 @@ sub merge_records {
 
         # print STDERR "done featureprop\n";
         ###get feature_relationship,fr_pub,frprop,frprop_pub
-        my $fr_state =
-            "select 'subject_id' as type, fr.feature_relationship_id, "
-          . "f1.feature_id as subject_id, f2.name as name,"
-          . " f2.feature_id as "
-          . "object_id, cvterm.name as frtype,rank from "
-          . "feature_relationship fr, "
-          . "feature f1, feature f2, cvterm where "
-          . "cvterm.cvterm_id=fr.type_id and "
-          . "fr.subject_id=f1.feature_id and "
-          . "fr.object_id=f2.feature_id and f1.is_obsolete = false and f1.uniquename='$id' "
-          . "union "
-          . "select 'object_id' as type, fr.feature_relationship_id, f2.feature_id as "
-          . "subject_id, f1.name as name, f1.feature_id as "
-          . "object_id, cvterm.name as frtype, rank from "
-          . "feature_relationship fr, "
-          . "feature f1, feature f2, cvterm where "
-          . "cvterm.cvterm_id=fr.type_id and "
-          . "fr.subject_id=f1.feature_id and "
-          . "fr.object_id=f2.feature_id and f2.is_obsolete = false and f2.uniquename='$id'";
+        my $fr_state = << "END_SQL";
+            SELECT 'subject_id' as type,
+                     fr.feature_relationship_id,
+                     f1.feature_id as subject_id,
+                     f2.name as name,
+                     f2.uniquename as uniquename,
+                     f2.feature_id as object_id,
+                     cvterm.name as frtype,
+                     rank
+              FROM feature_relationship fr,
+                   feature f1,
+                   feature f2,
+                   cvterm
+              WHERE
+                cvterm.cvterm_id=fr.type_id and
+                fr.subject_id=f1.feature_id and
+                fr.object_id=f2.feature_id and
+                f1.is_obsolete = false and
+                f1.uniquename='$id'
+            UNION
+              SELECT 'object_id' as type,
+                fr.feature_relationship_id,
+                f2.feature_id as subject_id,
+                f1.name as name,
+                f1.uniquename as uniquename,
+                f1.feature_id as object_id,
+                cvterm.name as frtype,
+                rank
+              FROM feature_relationship fr,
+                   feature f1,
+                   feature f2,
+                   cvterm
+              WHERE
+                cvterm.cvterm_id=fr.type_id and
+                fr.subject_id=f1.feature_id and
+                fr.object_id=f2.feature_id and
+                f2.is_obsolete = false and
+                f2.uniquename='$id'
+END_SQL
 
         # print STDERR $fr_state;
 
         my $fr_nmm = $dbh->prepare($fr_state);
         $fr_nmm->execute;
 
+        # PDEV-251 we know there is an problem with features with the same name
+        # being merged here BUT we have validation checks that find these
+        # and the fix would be complicated and take too mucj time.
+        # Bug seen 8 times in 5 years so should be okay.
         while ( my ($fr_hash) = $fr_nmm->fetchrow_hashref ) {
             my $fr_obj;
             if ( !defined( $fr_hash->{object_id} ) ) {
                 last;
             }
 
-           #print STDERR $fr_hash->{type}, " object_id ", $fr_hash->{object_id},
-           #   " subject_id ", $fr_hash->{subject_id}, "\n";
+           # print STDERR $fr_hash->{type}, " object_id ", $fr_hash->{object_id},
+           #   " subject_id ", $fr_hash->{subject_id}, " name ", $fr_hash->{name}, " frtype ", $fr_hash->{frtype}, "\n";
 
             my $subject_id = 'subject_id';
             my $object_id  = 'object_id';
@@ -11277,7 +11301,6 @@ sub merge_records {
             if ( $fr_hash->{type} eq 'object_id' ) {
                 $subject_id = 'object_id';
                 $object_id  = 'subject_id';
-                $fr_subject = $fr_hash->{object_id};
             }
             my $o_u = '';
             if ( defined( $fr_hash->{name} ) ) {
@@ -11304,6 +11327,7 @@ sub merge_records {
                         next;
                     }
 
+                    # print STDERR "DEBUG: $o_u, $o_g, $o_s, $o_t\n";
                     my $feature_ob = create_ch_feature(
                         doc        => $doc,
                         uniquename => $o_u,
@@ -11341,6 +11365,7 @@ sub merge_records {
 
             $fr_obj = create_ch_fr(
                 doc         => $doc,
+
                 $object_id  => $o_u,
                 $subject_id => $unique,
                 rtype       => $fr_hash->{frtype},
