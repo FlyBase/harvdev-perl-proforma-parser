@@ -574,6 +574,32 @@ sub process {
             my ( $fr1, $f_p1 ) =
               write_feature_relationship( $self->{db}, $doc, $subject, $object,
                 $unique, $ph{gene}, $fpr_type{$f}, 'unattributed' );
+
+            # The alleleof relationship between this allele and its gene used to
+            # be emitted twice - once attributed to 'unattributed' and once to
+            # the curation pub - producing two <feature_relationship> blocks that
+            # differ only by pub. subject_id/object_id/type_id/rank are the
+            # feature_relationship unique key, so the second block was a duplicate
+            # row (it relied on the loader to dedupe). Instead attach the curation
+            # pub as an extra feature_relationship_pub on the single relationship.
+            if ( !( exists( $ph{GA32b} ) && $ph{GA32b} eq 'y' )
+                && $ph{pub}
+                && $ph{pub} ne 'unattributed' )
+            {
+                $fr1->appendChild(
+                    create_ch_fr_pub( doc => $doc, pub_id => $ph{pub} ) );
+
+                # preserve the gene<->curation-pub feature_pub association that
+                # the now-removed second write_feature_relationship() added.
+                my $g_p = create_ch_feature_pub(
+                    doc        => $doc,
+                    feature_id => $ph{gene},
+                    pub_id     => $ph{pub}
+                );
+                $out .= dom_toString($g_p);
+                $g_p->dispose();
+            }
+
             $out .= dom_toString($fr1);
             $out .= $f_p1;
             if ( !exists( $ph{GA1f} )
@@ -602,14 +628,6 @@ sub process {
                     $o_fr->setAttribute( 'op', 'delete' );
                     $out .= dom_toString($o_fr);
                 }
-            }
-
-            if ( !( exists( $ph{GA32b} ) && $ph{GA32b} eq 'y' ) ) {
-                my ( $fr, $f_p ) =
-                  write_feature_relationship( $self->{db}, $doc, $subject,
-                    $object, $unique, $ph{gene}, $fpr_type{$f}, $ph{pub} );
-                $out .= dom_toString($fr);
-                $out .= $f_p;
             }
 
         }    # end elsif ( $f eq 'gene' )
