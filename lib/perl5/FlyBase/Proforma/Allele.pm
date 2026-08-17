@@ -3133,30 +3133,23 @@ sub write_phenotype {
     my $pheno_unique = '';
     print STDERR $field, $aref, "\n";
 
-    if ( ( $field eq 'GA17' || $field eq 'GA28b' || $field eq 'GA29b' )
-        && $aref =~ /\&/ )
-    {
-        push( @newpheno, $aref );
-        $first = $aref;
-    }
-    else {
-        my @phenoclass = split( /\s\|\s/, $aref );
-        $first = shift(@phenoclass);
+    my @phenoclass = split( /\s\|\s/, $aref );
+    $first = shift(@phenoclass);
 
-        #	print STDERR "$field, $first after shift @phenoclass\n";
+    #	print STDERR "$field, $first after shift @phenoclass\n";
 
-        foreach my $pheno (@phenoclass) {
-            if ( exists( $environments{$pheno} ) ) {
-                push( @environs, $pheno );
-            }
-            else {
-                push( @cvterms, $pheno );
-            }
+    foreach my $pheno (@phenoclass) {
+        if ( exists( $environments{$pheno} ) ) {
+            push( @environs, $pheno );
         }
-
-        @newpheno = sort(@cvterms);
-        unshift( @newpheno, $first );
+        else {
+            push( @cvterms, $pheno );
+        }
     }
+
+    @newpheno = sort(@cvterms);
+    unshift( @newpheno, $first );
+
     $pheno_unique = join( ' | ', @newpheno );
 
     #    print STDERR "$field, $pheno_unique after join\n";
@@ -3214,35 +3207,19 @@ sub write_phenotype {
     }
     elsif ( $field eq 'GA17' || $field eq 'GA28b' || $field eq 'GA29b' ) {
         my $observ_cv = get_cv_by_cvterm( $db, $first );
-        my $cvflag    = 0;
         if ( !defined($observ_cv) ) {
+
+            # Do not invent a term to paper over a failed lookup.  Report it
+            # and let the load fail, so a bad value is caught at curation
+            # time rather than becoming a fabricated cvterm in chado.
             print STDERR "ERROR: could not find cv for $first\n";
-            $observ_cv = 'FlyBase anatomy CV';
-            $cvflag    = 1;
         }
-        my $observ = '';
-        if ( $cvflag == 1 ) {
-            $observ = create_ch_cvterm(
-                doc       => $doc,
-                name      => $first,
-                cv        => $observ_cv,
-                dbxref_id => create_ch_dbxref(
-                    doc       => $doc,
-                    accession => $pheno_unique,
-                    db        => 'FlyBase',
-                    no_lookup => 1
-                ),
-                no_lookup => 1
-            );
-        }
-        else {
-            validate_cvterm( $db, $first, $observ_cv );
-            $observ = create_ch_cvterm(
-                doc  => $doc,
-                name => $first,
-                cv   => $observ_cv
-            );
-        }
+        validate_cvterm( $db, $first, $observ_cv );
+        my $observ = create_ch_cvterm(
+            doc  => $doc,
+            name => $first,
+            cv   => $observ_cv
+        );
         $phenotype = create_ch_phenotype(
             doc           => $doc,
             assay_id      => 'unspecified',
@@ -3253,25 +3230,33 @@ sub write_phenotype {
             macro_id      => $pheno_unique
         );
 
-        if ( !( $first =~ /\&/ ) ) {
-            my $pv_rank = 0;
-            shift(@newpheno);
-            foreach my $phe (@newpheno) {
+        my $pv_rank = 0;
+        shift(@newpheno);
+        foreach my $phe (@newpheno) {
 
-                my $ph_cv = get_cv_by_cvterm( $db, $phe );
-                validate_cvterm( $db, $phe, $ph_cv );
-                my $p_cv = create_ch_phenotype_cvterm(
-                    doc       => $doc,
-                    cvterm_id => create_ch_cvterm(
-                        doc  => $doc,
-                        name => $phe,
-                        cv   => $ph_cv
-                    ),
-                    rank => $pv_rank
-                );
-                $phenotype->appendChild($p_cv);
-                $pv_rank++;
+            my $ph_cv = get_cv_by_cvterm( $db, $phe );
+            validate_cvterm( $db, $phe, $ph_cv );
+
+            # Take the cvterm in scalar context first: create_ch_cvterm
+            # returns an empty list when the cv is unknown, which would
+            # otherwise shift the argument list below and emit a bogus
+            # <cvterm_id>rank</cvterm_id>.
+            my $cvterm = create_ch_cvterm(
+                doc  => $doc,
+                name => $phe,
+                cv   => $ph_cv
+            );
+            if ( !defined($cvterm) ) {
+                print STDERR "ERROR: could not make cvterm for $phe\n";
+                next;
             }
+            my $p_cv = create_ch_phenotype_cvterm(
+                doc       => $doc,
+                cvterm_id => $cvterm,
+                rank      => $pv_rank
+            );
+            $phenotype->appendChild($p_cv);
+            $pv_rank++;
         }
     }
     $out .= dom_toString($phenotype);
