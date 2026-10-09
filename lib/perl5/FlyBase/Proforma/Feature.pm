@@ -964,8 +964,21 @@ sub write_feature{
         print STDERR "INFO: Detected that gene list is > 1, must be a split system combination feature.\n";
         foreach my $split_component (@gn_list) {
           print STDERR "INFO: split system component $split_component is part of $ph{F1a}\n";
+          # FTA-274: FBti insertion components use 'has_insertion_component'; FBal allele components 'partially_produced_by'.
+          my $component_rtype = 'partially_produced_by';
+          my $component_uname = $fbids{$split_component};
+          if ( !defined($component_uname) ) {
+            ($component_uname) = get_feat_ukeys_by_name( $self->{db}, $split_component );
+          }
+          if ( $component_uname =~ /^FBti/ ) {
+            $component_rtype = 'has_insertion_component';
+          }
+          elsif ( $component_uname !~ /^FBal/ ) {
+            print STDERR "ERROR: split system component $split_component of $ph{F1a} must be an FBal allele or an FBti insertion\n";
+          }
+          print STDERR "INFO: split system component $split_component ($component_uname) relationship type: $component_rtype\n";
 	      my ($fr,$f_p) = write_feature_relationship( $self->{db}, $doc, 'subject_id',
-                          'object_id', $unique, $split_component, 'partially_produced_by', 'unattributed' );
+                          'object_id', $unique, $split_component, $component_rtype, 'unattributed' );
 	      $out.=dom_toString($fr);
         }
       }
