@@ -962,23 +962,44 @@ sub write_feature{
       print STDERR "INFO: gene list is this long: $gn_list_length.\n";
       if ( $gn_list_length > 1 ) {
         print STDERR "INFO: Detected that gene list is > 1, must be a split system combination feature.\n";
+        # FTA-274: split system combination components must be a pair of FBti insertions (FBco has_insertion_component FBti).
+        # The parental FBal of each FBti are looked up, and get FBco partially_produced_by FBal relationships.
+        if ( $gn_list_length != 2 ) {
+          print STDERR "ERROR: split system combination $ph{F1a} must have exactly 2 FBti components, has $gn_list_length\n";
+        }
+        my %parental_fbal;
         foreach my $split_component (@gn_list) {
           print STDERR "INFO: split system component $split_component is part of $ph{F1a}\n";
-          # FTA-274: FBti insertion components use 'has_insertion_component'; FBal allele components 'partially_produced_by'.
-          my $component_rtype = 'partially_produced_by';
           my $component_uname = $fbids{$split_component};
           if ( !defined($component_uname) ) {
             ($component_uname) = get_feat_ukeys_by_name( $self->{db}, $split_component );
           }
-          if ( $component_uname =~ /^FBti/ ) {
-            $component_rtype = 'has_insertion_component';
+          if ( $component_uname !~ /^FBti/ ) {
+            print STDERR "ERROR: split system component $split_component of $ph{F1a} must be an FBti insertion\n";
+            next;
           }
-          elsif ( $component_uname !~ /^FBal/ ) {
-            print STDERR "ERROR: split system component $split_component of $ph{F1a} must be an FBal allele or an FBti insertion\n";
-          }
-          print STDERR "INFO: split system component $split_component ($component_uname) relationship type: $component_rtype\n";
 	      my ($fr,$f_p) = write_feature_relationship( $self->{db}, $doc, 'subject_id',
-                          'object_id', $unique, $split_component, $component_rtype, 'unattributed' );
+                          'object_id', $unique, $split_component, 'has_insertion_component', 'unattributed' );
+	      $out.=dom_toString($fr);
+          if ( $component_uname !~ /^FBti\d+$/ ) {
+            print STDERR "ERROR: split system component $split_component of $ph{F1a} must be an FBti already in chado, to look up its parental FBal\n";
+            next;
+          }
+          my @fbal = get_ssc_parental_fbal( $self->{db}, $component_uname );
+          if ( scalar(@fbal) == 0 ) {
+            print STDERR "ERROR: could not find a parental split system FBal for split system component $split_component ($component_uname) of $ph{F1a}\n";
+          }
+          elsif ( scalar(@fbal) > 1 ) {
+            print STDERR "WARNING: split system component $split_component ($component_uname) of $ph{F1a} has many parental FBal: @fbal\n";
+          }
+          foreach my $fbal (@fbal) {
+            print STDERR "INFO: split system component $split_component ($component_uname) has parental FBal $fbal\n";
+            $parental_fbal{$fbal} = 1;
+          }
+        }
+        foreach my $fbal ( sort keys %parental_fbal ) {
+	      my ($fr,$f_p) = write_feature_relationship( $self->{db}, $doc, 'subject_id',
+                          'object_id', $unique, $fbal, 'partially_produced_by', 'unattributed' );
 	      $out.=dom_toString($fr);
         }
       }

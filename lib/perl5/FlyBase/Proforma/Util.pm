@@ -21,7 +21,7 @@ use DBI;
 # will save memory.
 our %EXPORT_TAGS = (
     'all' => [
-        qw( %fbids %fprank %fbcheck $multipub_no %frnum %curator %fbdbs %fbdv %fbgrpms get_sffeat_ukeys_by_name get_feat_ukeys_by_name read_r3_r4_map
+        qw( %fbids %fprank %fbcheck $multipub_no %frnum %curator %fbdbs %fbdv %fbgrpms get_sffeat_ukeys_by_name get_feat_ukeys_by_name get_ssc_parental_fbal read_r3_r4_map
           read_r4_r5_map add_feature_residue trim delete_libraryprop_pub delete_cell_line_relationship
           get_phenotype_comparison get_environment_by_id get_genotype_by_id get_phenotype_by_id
           get_cvterm_obsolete_by_cv_cvterm utftog get_lib_ukeys_by_id get_cell_line_ukeys_by_id
@@ -2542,6 +2542,69 @@ NAME_SQL
     }
     $nmm->finish;
     return ( $fbid, $genus, $species, $type );
+}
+
+sub get_ssc_parental_fbal {
+    #### FTA-274: given an FBti uniquename, return the uniquenames of its parental split system FBal:
+    #### current FBal (with a "DBD" or "AD" superscript, or "VP16" in the name) that are
+    #### associated_with the FBti directly or, if none, associated_with a relevant FBtp that the FBti is producedby
+    #### (FBtp name has the FBal half, and lacks combination/landing-site/reporter marks).
+    my $dbh   = shift;
+    my $fbti  = shift;
+    my %fbal_half;
+    my %direct;
+    my %via_fbtp;
+
+    my $statement = <<"FBAL_SQL";
+       SELECT a.uniquename, a.name, ''
+         FROM feature a, feature_relationship fr, cvterm t, feature ti
+         WHERE ti.uniquename = '$fbti' AND
+               fr.object_id = ti.feature_id AND
+               fr.subject_id = a.feature_id AND
+               fr.type_id = t.cvterm_id AND t.name = 'associated_with' AND
+               a.is_obsolete = 'f' AND a.uniquename LIKE 'FBal%'
+       UNION
+       SELECT a.uniquename, a.name, tp.name
+         FROM feature a, feature_relationship fr1, cvterm t1, feature tp,
+              feature_relationship fr2, cvterm t2, feature ti
+         WHERE ti.uniquename = '$fbti' AND
+               fr2.subject_id = ti.feature_id AND
+               fr2.object_id = tp.feature_id AND
+               fr2.type_id = t2.cvterm_id AND t2.name = 'producedby' AND
+               tp.is_obsolete = 'f' AND tp.uniquename LIKE 'FBtp%' AND
+               fr1.object_id = tp.feature_id AND
+               fr1.subject_id = a.feature_id AND
+               fr1.type_id = t1.cvterm_id AND t1.name = 'associated_with' AND
+               a.is_obsolete = 'f' AND a.uniquename LIKE 'FBal%';
+FBAL_SQL
+    my $nmm = $dbh->prepare($statement);
+    $nmm->execute;
+    while ( my ( $fbal, $fbal_name, $fbtp_name ) = $nmm->fetchrow_array ) {
+        my @match_strings;
+        if ( $fbal_name =~ /\[([^\]]*)\]$/ && $1 =~ /DBD/ ) {
+            @match_strings = ('DBD');
+        }
+        elsif ( $fbal_name =~ /\[([^\]]*)\]$/ && $1 =~ /AD/ ) {
+            @match_strings = ('AD');
+        }
+        elsif ( $fbal_name =~ /VP16/ ) {
+            @match_strings = ( 'AD', 'VP16' );
+        }
+        else {
+            next;
+        }
+        if ( $fbtp_name eq '' ) {
+            $direct{$fbal} = 1;
+        }
+        elsif ( ( grep { index( $fbtp_name, $_ ) >= 0 } @match_strings )
+            && $fbtp_name !~ /MB|AD1|AD2|20XUAS/ )
+        {
+            $via_fbtp{$fbal} = 1;
+        }
+    }
+    $nmm->finish;
+    my @fbal = %direct ? sort keys %direct : sort keys %via_fbtp;
+    return @fbal;
 }
 
 sub get_sffeat_ukeys_by_name {
