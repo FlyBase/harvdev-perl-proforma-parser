@@ -2549,11 +2549,14 @@ sub get_ssc_parental_fbal {
     #### current FBal (with a "DBD" or "AD" superscript, or "VP16" in the name) that are
     #### associated_with the FBti directly or, if none, associated_with a relevant FBtp that the FBti is producedby
     #### (FBtp name has the FBal half, and lacks combination/landing-site/reporter marks).
+    #### If many FBal are found and exactly one of them is a foreign gene allele (e.g., Scer\GAL4[...], Hsap\RELA[...]),
+    #### it is preferred: e.g., an insertional allele FBti is associated_with both dsx[GAL4-DBD] and Scer\GAL4[dsx-GAL4-DBD].
     my $dbh   = shift;
     my $fbti  = shift;
     my %fbal_half;
     my %direct;
     my %via_fbtp;
+    my %fbal_names;
 
     my $statement = <<"FBAL_SQL";
        SELECT a.uniquename, a.name, ''
@@ -2593,6 +2596,7 @@ FBAL_SQL
         else {
             next;
         }
+        $fbal_names{$fbal} = $fbal_name;
         if ( $fbtp_name eq '' ) {
             $direct{$fbal} = 1;
         }
@@ -2604,6 +2608,10 @@ FBAL_SQL
     }
     $nmm->finish;
     my @fbal = %direct ? sort keys %direct : sort keys %via_fbtp;
+    if ( scalar(@fbal) > 1 ) {
+        my @foreign = grep { index( $fbal_names{$_}, '\\' ) >= 0 } @fbal;
+        @fbal = @foreign if ( scalar(@foreign) == 1 );
+    }
     return @fbal;
 }
 
