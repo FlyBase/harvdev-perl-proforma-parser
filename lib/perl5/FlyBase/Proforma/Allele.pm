@@ -2813,6 +2813,11 @@ sub parse_multiple_break {
         print STDERR "ERROR: GA90k Cannot be used with !c\n";
         return $out;
     }
+    # FTA-88: rescue regions are FBsf features, curated in the SEQUENCE FEATURE proforma (SF2b).
+    if ( $gen_loc{GA90k} eq 'rescue_region' ) {
+        print STDERR "ERROR: GA90k rescue_region is not allowed for $gen_loc{GA90a}: curate rescue regions in the SEQUENCE FEATURE proforma (SF2b rescue_region, SF5b allele)\n";
+        return $out;
+    }
     $br_unique = $gen_loc{GA90a};
     print STDERR "CHECK: Allele $fbti has GA90a = $br_unique $pub_id \n";
     if ( exists( $gen_loc{'GA90b.upd'} ) && $gen_loc{'GA90b.upd'} eq 'c' ) {
