@@ -86,6 +86,7 @@ our %sftype = (
     'enhancer', 'sf',
     'protein_binding_site', 'sf',
 #    'rescue_fragment', 'sf',
+    'rescue_region', 'sf',
     'TSS', 'sf',
     'origin_of_replication', 'sf',
     'RNAi_reagent','sf',
@@ -163,6 +164,13 @@ our %fpr_type = (
 );
 
 my %sf3c_type = ('experimental_result',1, 'member_of_reagent_collection',1 );
+
+# FTA-88: rescue_region features are "partof" their allele (as for other ARGs), so
+# SF5b is a "partof" relationship for them; "associated_with" for other features.
+our %rescue_fpr_type = (
+    'SF5b', 'partof',
+);
+my %sf_type_cache = ();
 
 our %ti_type = (
     'RNAi_reagent',          'RNAi_reagent'
@@ -318,26 +326,27 @@ sub process {
         {
             my $object  = 'object_id';
             my $subject = 'subject_id';
-  
+            my $fr_type = get_fr_type( $self->{db}, \%ph, $f );
+
             if ( exists( $ph{"$f.upd"} ) and $ph{"$f.upd"} eq 'c' ) {
                   print STDERR "Action Items: !c log, $unique $f $ph{pub}\n";
-               
+
                 my @results =
                   get_unique_key_for_fr( $self->{db}, $subject, $object,
-                    $unique, $fpr_type{$f}, $ph{pub},$ftype{$f} );
+                    $unique, $fr_type, $ph{pub},$ftype{$f} );
                     foreach my $ta (@results) {
                         my $num = get_fr_pub_nums( $self->{db}, $ta->{fr_id} );
                         if ( $num == 1  || (defined($frnum{$unique}{$ta->{name}}) && $num-$frnum{$unique}{$ta->{name}}==1)) {
                             $out .=
                               delete_feature_relationship( $self->{db}, $doc,
                                 $ta, $subject, $object, $unique,
-                                $fpr_type{$f}  );
+                                $fr_type  );
                         }
                         elsif ( $num > 1 ) {
                             $out .=
                               delete_feature_relationship_pub( $self->{db},
                                 $doc, $ta, $subject, $object, $unique,
-                                $fpr_type{$f}, $ph{pub});
+                                $fr_type, $ph{pub});
                         }
                         else {
                             print STDERR "ERROR: $f something Wrong, please validate first\n";
@@ -363,7 +372,7 @@ sub process {
 			    $self->{db},       $doc,
 			    $subject,           $object,
 			    $unique,           $item,
-			    $fpr_type{$f},  $ph{pub},
+			    $fr_type,  $ph{pub},
 			    $ft, $ftype{$f}
 			    );
 			$out .= dom_toString($fr);
@@ -1086,6 +1095,38 @@ sub write_feature{
   return ($out, $unique);
 }
 
+## FTA-88: get the feature type of the sequence feature in a proforma:
+## SF2b for a new feature, or the type in chado for an existing FBsf (SF1f).
+sub get_sf_type {
+    my $dbh = shift;
+    my $ph  = shift;
+    my $type = '';
+    if ( exists( $ph->{SF1f} ) && $ph->{SF1f} ne 'new' ) {
+        if ( !exists( $sf_type_cache{ $ph->{SF1f} } ) ) {
+            my ( $genus, $species, $ftype ) =
+              get_feat_ukeys_by_uname( $dbh, $ph->{SF1f} );
+            $sf_type_cache{ $ph->{SF1f} } = defined($ftype) ? $ftype : '';
+        }
+        $type = $sf_type_cache{ $ph->{SF1f} };
+    }
+    elsif ( exists( $ph->{SF2b} ) && defined( $ph->{SF2b} ) ) {
+        $type = $ph->{SF2b};
+    }
+    return $type;
+}
+
+## FTA-88: get the feature_relationship type for a field: e.g., SF5b is
+## "partof" for a rescue_region, "associated_with" for other features.
+sub get_fr_type {
+    my $dbh = shift;
+    my $ph  = shift;
+    my $f   = shift;
+    if ( exists( $rescue_fpr_type{$f} ) && get_sf_type( $dbh, $ph ) eq 'rescue_region' ) {
+        return $rescue_fpr_type{$f};
+    }
+    return $fpr_type{$f};
+}
+
 #Checking points:
 #I. when SF1f is new
 #1. check existance of SF3b(organism) SF2b(feature type)
@@ -1162,7 +1203,7 @@ sub validate {
                     my $object  = 'object_id';
                     my @num =
                       get_unique_key_for_fr( $db, $subject, $object,
-                        $v_unique, $fpr_type{$f}, $tival{pub} );
+                        $v_unique, get_fr_type( $db, \%tival, $f ), $tival{pub} );
                     if ( @num == 0 ) {
                         print STDERR "ERROR !c: There is no previous record for $f field\n";
                     }
