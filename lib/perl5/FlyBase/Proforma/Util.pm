@@ -1202,6 +1202,10 @@ sub update_pub {
               create_ch_environment( doc => $doc, uniquename => $e2_id ),
             phenotype1_id =>
               create_ch_phenotype( doc => $doc, uniquename => $ph_id ),
+            # organism is required by create_ch_phenotype_comparison; without it
+            # $phen_old was undef and P32 died (DC-1120)
+            organism_id =>
+              create_ch_organism( doc => $doc, genus => $g, species => $s ),
             pub_id => $old
         );
         $phen_old->setAttribute( 'op', 'delete' );
