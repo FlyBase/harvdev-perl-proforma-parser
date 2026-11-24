@@ -861,6 +861,7 @@ sub update_pub {
         if ( $s_u eq '0' || $o_u eq '0' ) {
             print STDERR "ERROR:features may be obsoleted. $s_id, $o_id\n";
         }
+        my ( $fr_cv, $fr_type ) = get_cvterm_ukeys_by_id( $dbh, $fr_t );
         my $fr = create_ch_fr(
             doc        => $doc,
             subject_id => create_ch_feature(
@@ -879,7 +880,8 @@ sub update_pub {
                 type       => $o_t,
                 cvname     => $o_cv
             ),
-            rtype => get_cvterm_by_id( $dbh, $fr_t ),
+            rtype   => $fr_type,
+            rtypecv => $fr_cv,
             rank  => $rank
         );
         my $fr_pub    = create_ch_fr_pub( doc => $doc, pub_id => $unique );
