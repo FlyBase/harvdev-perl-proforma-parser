@@ -300,7 +300,7 @@ sub process {
                 $pdbx->dispose();
                 $out.=update_pub($self->{db}, $doc, $unique,$item);
                 # DC-1120: move data in all other pub-linked tables
-                $out.=merge_pub_links($self->{db}, $doc, $unique,$item);
+                $out.=merge_pub_links($self->{db}, $doc, $unique,$item, \@items);
             }
             
         }

@@ -44,10 +44,17 @@ my %PR_TYPES_NOT_MOVED = map { $_ => 1 } qw( published_in );
 
 my %meta_cache = ();
 my @pub_fks    = ();
-my %rank_used  = ();    # child ranks already used in this run, by row key
+# State kept for the whole parser run, so that several losing pubs merged
+# into the same winner (one P32 list, or several records in one load) do not
+# write the same row or child row twice:
+my %rank_used  = ();    # child ranks used, by winner + row + child table + type
+my %written    = ();    # rows written for a winner in this run, with child signatures
+my %pr_written = ();    # pub_relationship links written for a winner in this run
 
+# $all_losers (optional): every FBrf in the P32 field, so that links between
+# pubs being merged into the same winner are not moved.
 sub merge_pub_links {
-    my ( $dbh, $doc, $winner, $loser ) = @_;
+    my ( $dbh, $doc, $winner, $loser, $all_losers ) = @_;
     my $out = '';
 
     my $loser_id  = get_pub_id( $dbh, $loser );
@@ -63,6 +70,7 @@ sub merge_pub_links {
         loser     => $loser,
         winner_id => $winner_id,
         loser_id  => $loser_id,
+        losers    => { map { my $u = $_; $u =~ s/^\s+|\s+$//g; ( $u => 1 ) } ( $loser, @{ $all_losers || [] } ) },
     };
 
     foreach my $fk ( get_pub_fks($dbh) ) {
@@ -124,13 +132,19 @@ sub move_row {
     my $meta = get_meta( $dbh, $table );
 
     my $winner_row = find_winner_row( $ctx, $table, $col, $row );
+    my $row_key    = join( '|', $ctx->{winner}, $table,
+        map { defined( $row->{$_} ) && $_ ne $col ? $row->{$_} : '' } @{ $meta->{uk} } );
+
+    # The winner already has this row: in the database, or written earlier in this run.
+    my $exists = ( $winner_row || $written{$row_key} ) ? 1 : 0;
+    $written{$row_key} ||= { sigs => {}, loaded => {} };
 
     my $add = $doc->createElement($table);
     foreach my $c ( @{ $meta->{uk} } ) {
         my $el = col_element( $ctx, $table, $c, $row->{$c}, $c eq $col ? 'winner' : undef );
         $add->appendChild($el) if $el;
     }
-    if ( !$winner_row ) {
+    if ( !$exists ) {
 
         # New row for the winner: copy the other columns too (is_current etc.).
         foreach my $c ( @{ $meta->{cols} } ) {
@@ -140,10 +154,9 @@ sub move_row {
             $add->appendChild($el) if $el;
         }
     }
-    my $row_key = join( '|', $table, map { defined( $row->{$_} ) && $_ ne $col ? $row->{$_} : '' } @{ $meta->{uk} } );
     foreach my $child ( @{ $meta->{children} } ) {
         my ( $ctable, $cfk ) = @{$child};
-        foreach my $cel ( child_elements( $ctx, $ctable, $cfk, $row->{ $meta->{pk} }, $winner_row, $row_key ) ) {
+        foreach my $cel ( child_elements( $ctx, $ctable, $cfk, $row->{ $meta->{pk} }, $winner_row, $row_key, $exists ) ) {
             $add->appendChild($cel);
         }
     }
@@ -159,10 +172,11 @@ sub move_row {
     return $out;
 }
 
-# Child rows (props etc.) of a moved row. If the winner already has the row,
-# skip children it already has and give the others free ranks.
+# Child rows (props etc.) of a moved row. If the winner already has the row
+# (in the database or written earlier in this run), skip children it already
+# has and give the others free ranks.
 sub child_elements {
-    my ( $ctx, $ctable, $cfk, $parent_id, $winner_row, $row_key ) = @_;
+    my ( $ctx, $ctable, $cfk, $parent_id, $winner_row, $row_key, $exists ) = @_;
     my $dbh   = $ctx->{dbh};
     my $doc   = $ctx->{doc};
     my $cmeta = get_meta( $dbh, $ctable );
@@ -188,12 +202,15 @@ sub child_elements {
     my @sig_cols   = grep { $_ ne 'rank' } @value_cols;
     my $has_rank   = grep { $_ eq 'rank' } @value_cols;
 
-    my %winner_sigs = ();
-    if ($winner_row) {
+    # Children the winner's row already has: from the database (read once
+    # per row) plus those written earlier in this run.
+    my $state = $written{$row_key};
+    my $sigs  = ( $state->{sigs}{$ctable} ||= {} );
+    if ( $winner_row && !$state->{loaded}{$ctable}++ ) {
         my $wrows = $dbh->selectall_arrayref( "SELECT * FROM $ctable WHERE $cfk = ?",
             { Slice => {} }, $winner_row->{_pk} );
         foreach my $w ( @{$wrows} ) {
-            $winner_sigs{ signature( $w, \@sig_cols ) } = 1;
+            $sigs->{ signature( $w, \@sig_cols ) } = 1;
             if ($has_rank) {
                 my $rk = rank_key( $row_key, $ctable, $w );
                 $rank_used{$rk}{ $w->{rank} } = 1;
@@ -202,14 +219,18 @@ sub child_elements {
     }
 
     foreach my $r ( @{$rows} ) {
-        next if ( $winner_row && $winner_sigs{ signature( $r, \@sig_cols ) } );
+        my $sig = signature( $r, \@sig_cols );
+        next if ( $exists && $sigs->{$sig} );
+        $sigs->{$sig} = 1;
         my $el = $doc->createElement($ctable);
         foreach my $c (@value_cols) {
             my $v = $r->{$c};
-            if ( $c eq 'rank' && $winner_row ) {
+            if ( $c eq 'rank' ) {
                 my $rk = rank_key( $row_key, $ctable, $r );
-                $v = 0;
-                $v++ while ( $rank_used{$rk}{$v} );
+                if ($exists) {
+                    $v = 0;
+                    $v++ while ( $rank_used{$rk}{$v} );
+                }
                 $rank_used{$rk}{$v} = 1;
             }
             next unless defined($v);
@@ -335,6 +356,15 @@ sub merge_pub_relationships {
             print STDERR "STATE: P32 merge: not moving $what (link with the winning pub)\n";
             next;
         }
+        if ( $ctx->{losers}{ $r->{other} } ) {
+            print STDERR "STATE: P32 merge: not moving $what (other pub is also being merged into $ctx->{winner})\n";
+            next;
+        }
+        my $pr_key = join( '|', $ctx->{winner}, $r->{type_id}, $r->{other_id} );
+        if ( $pr_written{$pr_key} ) {
+            print STDERR "STATE: P32 merge: not moving $what (already moved to the winner in this load)\n";
+            next;
+        }
         if ( $r->{other_obsolete} ) {
             print STDERR "STATE: P32 merge: not moving $what (other pub is obsolete)\n";
             next;
@@ -350,6 +380,7 @@ sub merge_pub_relationships {
                 next;
             }
         }
+        $pr_written{$pr_key} = 1;
         my $loser_is_subject = $r->{subject_id} == $ctx->{loser_id};
         print STDERR "STATE: P32 merge: moving $what\n";
         foreach my $op ( '', 'delete' ) {
