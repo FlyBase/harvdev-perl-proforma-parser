@@ -786,39 +786,15 @@ sub update_pub {
     my $unique = shift;
     my $old    = shift;
     my $out    = '';
-    ###tables containing the pub
-    ### expression_pub               | table | emmert
-    ### feature_pub                  | table | emmert
-    ### feature_pubprop              | table | emmert
-    ### feature_relationship_pub     | table | emmert
-    ### feature_relationshipprop_pub | table | emmert
-    ### featureloc_pub               | table | emmert
-    ### featuremap_pub               | table | emmert
-    ### featureprop_pub              | table | emmert
-    ### feature_cvterm
-    ### feature_expression
-    ### feature_interaction_pub
-    ### feature_synonym
-    ### phenstatement
-    ### phenotype_comparison
-    ### phendesc
-    ### library_pub
-    ### library_cvterm
-    ### library_interaction
-    ### library_relationship_pub
-    ### library_synonym
-    ### libraryprop_pub
-    ### interaction_pub
-    ### interaction_cvterm
-    ### interaction_expression
-    ### interaction_cell_line
-    ### interactionprop_pub
-    ### pub_relationship
-    ### pub_prop
-    ###todo
-    ### organism_pub
-    ### organism_cvterm
-    ### organismprop_pub
+    ### P32 pub merge: move rows from the losing pub ($old) to the winning pub.
+    ### This sub moves:
+    ###   feature_pub (+ feature_pubprop), feature_relationship_pub
+    ###   (+ feature_relationshipprop_pub of those relationships), featureloc_pub,
+    ###   featureprop_pub, feature_synonym, feature_cvterm (+ feature_cvtermprop),
+    ###   phendesc, phenstatement, phenotype_comparison (+ _cvterm),
+    ###   and copies pubprop.
+    ### All other pub-linked tables are moved by merge_pub_links in
+    ### PubMerge.pm (DC-1120), which Pub.pm calls after this sub.
 
     my $ep_stat =
 "select feature_pub.feature_pub_id, feature.uniquename, feature.type_id, feature.organism_id from feature_pub, feature, pub where feature.feature_id=feature_pub.feature_id and feature_pub.pub_id=pub.pub_id and pub.uniquename='$old';";
