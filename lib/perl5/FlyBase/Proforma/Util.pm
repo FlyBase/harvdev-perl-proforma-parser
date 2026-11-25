@@ -5271,11 +5271,13 @@ sub get_feature_cvtermprop_rank {
 
             my $fb_el = $dbh->prepare($state);
             $fb_el->execute;
-            while ( my $p_r = $fb_el->fetchrow_array ) {
-                if ( $p_r ne '' ) {
-                    $rank = $p_r;
-                    $rank++;
-                }
+            # max() always returns one row; it is NULL when there are no
+            # props. Test definedness, not truth: a max rank of 0 is false
+            # in Perl, and treating it as "no rows" handed out rank 0 again,
+            # which clashed with the existing rank-0 prop.
+            my ($p_r) = $fb_el->fetchrow_array;
+            if ( defined($p_r) && $p_r ne '' ) {
+                $rank = $p_r + 1;
             }
             $fprank{$fb_id}{ $cvterm . $pub . $type } = $rank;
             if ( defined($value) ) {
