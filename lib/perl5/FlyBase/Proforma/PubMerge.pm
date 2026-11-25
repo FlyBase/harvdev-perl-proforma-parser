@@ -39,6 +39,21 @@ my %UPDATE_PUB_TABLES = map { $_ => 1 } qw(
 # FBrf to the winner as a secondary FlyBase pub_dbxref).
 my %NOT_MOVED_TABLES = map { $_ => 1 } qw( pubauthor pub_dbxref );
 
+# Pub-linked tables that XORT cannot load (not in harvdev-xorted ddl.properties),
+# so writing XML for them would abort the whole load. Their rows stay on the
+# losing pub and are reported:
+# - genotype_relationship ("is_represented_at_alliance_as") is written only by
+#   harvdev-production-bulk-update make_alliance_genotypes.py, which derives its
+#   pub from the genotype's phenotype data (moved by update_pub). A reassess
+#   run (-r) regenerates these links under the winning pub.
+# - pub_analysis_feature has no XORT support; its rows are reported as not moved.
+my %NOT_IN_XORT_SCHEMA = (
+    genotype_relationship =>
+      'STATE: regenerated under the winning pub by make_alliance_genotypes.py -r (reassess)',
+    pub_analysis_feature =>
+      'ERROR: table not in the XORT schema, cannot be moved by the parser',
+);
+
 # pub_relationship types that are not moved: the winning pub has its own journal.
 my %PR_TYPES_NOT_MOVED = map { $_ => 1 } qw( published_in );
 
@@ -77,6 +92,14 @@ sub merge_pub_links {
         my ( $table, $col ) = @{$fk};
         next if ( $UPDATE_PUB_TABLES{$table} || $NOT_MOVED_TABLES{$table} );
         next if ( $table eq 'pub_relationship' );    # handled below
+        if ( my $why = $NOT_IN_XORT_SCHEMA{$table} ) {
+            my ($n) = $dbh->selectrow_array( "SELECT count(*) FROM $table WHERE $col = ?", undef, $loser_id );
+            if ($n) {
+                my ( $level, $reason ) = split( /: /, $why, 2 );
+                print STDERR "$level: P32 merge $loser->$winner: $n rows in $table not moved ($reason)\n";
+            }
+            next;
+        }
 
         my $sql = "SELECT * FROM $table WHERE $col = ?";
         if ( $table eq 'feature_relationshipprop_pub' ) {
