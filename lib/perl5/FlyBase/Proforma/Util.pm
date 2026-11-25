@@ -1080,7 +1080,7 @@ sub update_pub {
             my ( $fp_cv, $fp_name, $is ) = get_cvterm_ukeys_by_id( $dbh, $t );
             my $r =
               get_feature_cvtermprop_rank( $dbh, $fu, $cv, $cvterm, $fp_name,
-                $v, $unique );
+                $v, $unique, $is_not );
             my $fcvp = create_ch_feature_cvtermprop(
                 doc     => $doc,
                 value   => $v,
@@ -5183,6 +5183,14 @@ sub get_feature_cvtermprop_rank {
     my $type   = shift;
     my $value  = shift;
     my $pub    = shift;
+
+    # Optional: feature_cvterm.is_not of the annotation the prop belongs
+    # to. is_not is part of feature_cvterm's unique key, so a NOT and a
+    # positive annotation of the same feature/term/pub are separate rows
+    # with separate prop ranks. Callers that pass it (update_pub) get
+    # lookups and cache entries for that row only; callers that don't
+    # keep the old behaviour.
+    my $is_not = shift;
     my $rank   = 0;
     $cvterm =~ s/\\/\\\\/g;
     $cvterm =~ s/\'/\\\'/g;
@@ -5191,21 +5199,13 @@ sub get_feature_cvtermprop_rank {
         $value =~ s/\\/\\\\/g;
         $value =~ s/\'/\\\'/g;
     }
-    if (   defined($value)
-        && defined( $fprank{$fb_id}{ $cvterm . $pub . $type . $value } ) )
-    {
-        return $fprank{$fb_id}{ $cvterm . $pub . $type . $value };
+    my $not_sql = '';
+    my $pkey    = $pub;
+    if ( defined($is_not) ) {
+        $not_sql = $is_not ? ' and feature_cvterm.is_not=true' : ' and feature_cvterm.is_not=false';
+        $pkey    = $pub . ( $is_not ? '|is_not' : '|is' );
     }
-    else {
-        if ( defined( $fprank{$fb_id}{ $cvterm . $pub . $type } ) ) {
-
-            # The type is cached from an earlier value in this run, but this
-            # value may already be in chado (e.g. a P32 merge moving the same
-            # value from a second losing pub onto the winner). Reuse its rank
-            # rather than writing the value again at a new rank.
-            if ( defined($value) ) {
-                my $fc_el = $dbh->prepare(
-                    "select max(feature_cvtermprop.rank) from
+    my $base_sql = "select max(feature_cvtermprop.rank) from
 			feature_cvterm,
 			feature, cv, cvterm, pub, cvterm cvterm2, feature_cvtermprop
 			where feature_cvterm.feature_id=feature.feature_id and
@@ -5213,85 +5213,59 @@ sub get_feature_cvtermprop_rank {
 			feature_cvtermprop.feature_cvterm_id =
 			feature_cvterm.feature_cvterm_id
 			and feature_cvtermprop.type_id=cvterm2.cvterm_id and
-			cvterm2.name='$type'
-				and
+			cvterm2.name='$type' and
 			feature_cvterm.cvterm_id=cvterm.cvterm_id and cvterm.cv_id=cv.cv_id
 			and cv.name='$cv' and cvterm.name= E'$cvterm' and
 			feature_cvterm.pub_id=pub.pub_id and
-			pub.uniquename='$pub' and feature_cvtermprop.value= E'$value'"
-                );
-                $fc_el->execute;
-                my $f_r = $fc_el->fetchrow_array;
-                if ( defined($f_r) ) {
-                    $fprank{$fb_id}{ $cvterm . $pub . $type . $value } = $f_r;
-                    return $f_r;
-                }
-            }
-            $fprank{$fb_id}{ $cvterm . $pub . $type } += 1;
-            if ( defined($value) ) {
-                $fprank{$fb_id}{ $cvterm . $pub . $type . $value } =
-                  $fprank{$fb_id}{ $cvterm . $pub . $type };
-            }
-            return $fprank{$fb_id}{ $cvterm . $pub . $type };
+			pub.uniquename='$pub'$not_sql";
+
+    # Rank of this value if the annotation already has it in chado.
+    my $existing_rank = sub {
+        my $fc_el = $dbh->prepare(
+            $base_sql . " and feature_cvtermprop.value= E'$value'" );
+        $fc_el->execute;
+        my ($f_r) = $fc_el->fetchrow_array;
+        return $f_r;
+    };
+
+    if (   defined($value)
+        && defined( $fprank{$fb_id}{ $cvterm . $pkey . $type . $value } ) )
+    {
+        return $fprank{$fb_id}{ $cvterm . $pkey . $type . $value };
+    }
+
+    # The value may already be in chado, even when the type is cached from
+    # an earlier value in this run (e.g. a P32 merge moving the same value
+    # from a second losing pub onto the winner). Reuse its rank rather than
+    # writing the value again at a new rank.
+    if ( defined($value) ) {
+        my $f_r = $existing_rank->();
+        if ( defined($f_r) ) {
+            $fprank{$fb_id}{ $cvterm . $pkey . $type . $value } = $f_r;
+            return $f_r;
         }
-        else {
-            if ( defined($value) ) {
-                my $statement = "select max(feature_cvtermprop.rank) from 
-			feature_cvterm,
-			feature, cv, cvterm, pub, cvterm cvterm2, feature_cvtermprop
-			where feature_cvterm.feature_id=feature.feature_id and
-			feature.uniquename='$fb_id' and
-			feature_cvtermprop.feature_cvterm_id = 
-			feature_cvterm.feature_cvterm_id
-			and feature_cvtermprop.type_id=cvterm2.cvterm_id and
-			cvterm2.name='$type' 
-				and
-			feature_cvterm.cvterm_id=cvterm.cvterm_id and cvterm.cv_id=cv.cv_id
-			and cv.name='$cv' and cvterm.name= E'$cvterm' and 
-			feature_cvterm.pub_id=pub.pub_id and
-			pub.uniquename='$pub' and feature_cvtermprop.value= E'$value'";
+    }
 
-                #print STDERR "$statement\n";
-                my $fc_el = $dbh->prepare($statement);
-                $fc_el->execute;
-                my $f_r = $fc_el->fetchrow_array;
-                if ( defined($f_r) ) {
-                    $fprank{$fb_id}{ $cvterm . $pub . $type . $value } = $f_r;
-                    return $f_r;
-                }
-            }
+    if ( defined( $fprank{$fb_id}{ $cvterm . $pkey . $type } ) ) {
+        $fprank{$fb_id}{ $cvterm . $pkey . $type } += 1;
+    }
+    else {
+        my $fb_el = $dbh->prepare($base_sql);
+        $fb_el->execute;
 
-            my $state = "select max(feature_cvtermprop.rank) from 
-			feature_cvterm,
-			feature, cv, cvterm, pub, cvterm cvterm2, feature_cvtermprop
-			where feature_cvterm.feature_id=feature.feature_id and
-			feature.uniquename='$fb_id' and
-			feature_cvtermprop.feature_cvterm_id = 
-			feature_cvterm.feature_cvterm_id
-			and feature_cvtermprop.type_id=cvterm2.cvterm_id and
-			cvterm2.name='$type' and
-			feature_cvterm.cvterm_id=cvterm.cvterm_id and cvterm.cv_id=cv.cv_id
-			and cv.name='$cv' and cvterm.name= E'$cvterm' and 
-			feature_cvterm.pub_id=pub.pub_id and
-			pub.uniquename='$pub'";
-
-            my $fb_el = $dbh->prepare($state);
-            $fb_el->execute;
-            # max() always returns one row; it is NULL when there are no
-            # props. Test definedness, not truth: a max rank of 0 is false
-            # in Perl, and treating it as "no rows" handed out rank 0 again,
-            # which clashed with the existing rank-0 prop.
-            my ($p_r) = $fb_el->fetchrow_array;
-            if ( defined($p_r) && $p_r ne '' ) {
-                $rank = $p_r + 1;
-            }
-            $fprank{$fb_id}{ $cvterm . $pub . $type } = $rank;
-            if ( defined($value) ) {
-                $fprank{$fb_id}{ $cvterm . $pub . $type . $value } = $rank;
-            }
-            return $rank;
+        # max() always returns one row; it is NULL when there are no
+        # props. Test definedness, not truth: a max rank of 0 is false
+        # in Perl, and treating it as "no rows" handed out rank 0 again,
+        # which clashed with the existing rank-0 prop.
+        my ($p_r) = $fb_el->fetchrow_array;
+        if ( defined($p_r) && $p_r ne '' ) {
+            $rank = $p_r + 1;
         }
-
+        $fprank{$fb_id}{ $cvterm . $pkey . $type } = $rank;
+    }
+    $rank = $fprank{$fb_id}{ $cvterm . $pkey . $type };
+    if ( defined($value) ) {
+        $fprank{$fb_id}{ $cvterm . $pkey . $type . $value } = $rank;
     }
     return $rank;
 }
