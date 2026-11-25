@@ -5185,11 +5185,13 @@ sub get_feature_cvtermprop_rank {
     my $pub    = shift;
 
     # Optional: feature_cvterm.is_not of the annotation the prop belongs
-    # to. is_not is part of feature_cvterm's unique key, so a NOT and a
-    # positive annotation of the same feature/term/pub are separate rows
-    # with separate prop ranks. Callers that pass it (update_pub) get
-    # lookups and cache entries for that row only; callers that don't
-    # keep the old behaviour.
+    # to (update_pub passes it). is_not is part of feature_cvterm's unique
+    # key, so a NOT and a positive annotation of the same feature/term/pub
+    # are separate rows. It only narrows the "value already there" lookup
+    # and its cache entry, so a value is never given the rank it has on the
+    # other row. The rank counter stays shared by both rows and all callers
+    # (seeded from the max over both rows): it can leave gaps but never
+    # clash, whichever caller hands out ranks in the run.
     my $is_not = shift;
     my $rank   = 0;
     $cvterm =~ s/\\/\\\\/g;
@@ -5200,11 +5202,12 @@ sub get_feature_cvtermprop_rank {
         $value =~ s/\'/\\\'/g;
     }
     my $not_sql = '';
-    my $pkey    = $pub;
+    my $vkey    = $cvterm . $pub . $type;
     if ( defined($is_not) ) {
         $not_sql = $is_not ? ' and feature_cvterm.is_not=true' : ' and feature_cvterm.is_not=false';
-        $pkey    = $pub . ( $is_not ? '|is_not' : '|is' );
+        $vkey .= $is_not ? '|is_not' : '|is';
     }
+    my $tkey     = $cvterm . $pub . $type;
     my $base_sql = "select max(feature_cvtermprop.rank) from
 			feature_cvterm,
 			feature, cv, cvterm, pub, cvterm cvterm2, feature_cvtermprop
@@ -5217,37 +5220,32 @@ sub get_feature_cvtermprop_rank {
 			feature_cvterm.cvterm_id=cvterm.cvterm_id and cvterm.cv_id=cv.cv_id
 			and cv.name='$cv' and cvterm.name= E'$cvterm' and
 			feature_cvterm.pub_id=pub.pub_id and
-			pub.uniquename='$pub'$not_sql";
+			pub.uniquename='$pub'";
 
-    # Rank of this value if the annotation already has it in chado.
-    my $existing_rank = sub {
-        my $fc_el = $dbh->prepare(
-            $base_sql . " and feature_cvtermprop.value= E'$value'" );
-        $fc_el->execute;
-        my ($f_r) = $fc_el->fetchrow_array;
-        return $f_r;
-    };
-
-    if (   defined($value)
-        && defined( $fprank{$fb_id}{ $cvterm . $pkey . $type . $value } ) )
-    {
-        return $fprank{$fb_id}{ $cvterm . $pkey . $type . $value };
+    if ( defined($value) && defined( $fprank{$fb_id}{ $vkey . $value } ) ) {
+        return $fprank{$fb_id}{ $vkey . $value };
     }
 
-    # The value may already be in chado, even when the type is cached from
-    # an earlier value in this run (e.g. a P32 merge moving the same value
-    # from a second losing pub onto the winner). Reuse its rank rather than
-    # writing the value again at a new rank.
-    if ( defined($value) ) {
-        my $f_r = $existing_rank->();
+    # Is the value already in chado? Always asked the first time a type is
+    # seen. Once the type is cached, only asked when is_not is given: then
+    # the lookup is limited to the right row, so the rank it returns cannot
+    # belong to a different value on that row (e.g. a P32 merge moving the
+    # same value from a second losing pub onto the winner).
+    if ( defined($value)
+        && ( !defined( $fprank{$fb_id}{$tkey} ) || defined($is_not) ) )
+    {
+        my $fc_el = $dbh->prepare(
+            $base_sql . $not_sql . " and feature_cvtermprop.value= E'$value'" );
+        $fc_el->execute;
+        my ($f_r) = $fc_el->fetchrow_array;
         if ( defined($f_r) ) {
-            $fprank{$fb_id}{ $cvterm . $pkey . $type . $value } = $f_r;
+            $fprank{$fb_id}{ $vkey . $value } = $f_r;
             return $f_r;
         }
     }
 
-    if ( defined( $fprank{$fb_id}{ $cvterm . $pkey . $type } ) ) {
-        $fprank{$fb_id}{ $cvterm . $pkey . $type } += 1;
+    if ( defined( $fprank{$fb_id}{$tkey} ) ) {
+        $fprank{$fb_id}{$tkey} += 1;
     }
     else {
         my $fb_el = $dbh->prepare($base_sql);
@@ -5261,11 +5259,11 @@ sub get_feature_cvtermprop_rank {
         if ( defined($p_r) && $p_r ne '' ) {
             $rank = $p_r + 1;
         }
-        $fprank{$fb_id}{ $cvterm . $pkey . $type } = $rank;
+        $fprank{$fb_id}{$tkey} = $rank;
     }
-    $rank = $fprank{$fb_id}{ $cvterm . $pkey . $type };
+    $rank = $fprank{$fb_id}{$tkey};
     if ( defined($value) ) {
-        $fprank{$fb_id}{ $cvterm . $pkey . $type . $value } = $rank;
+        $fprank{$fb_id}{ $vkey . $value } = $rank;
     }
     return $rank;
 }
