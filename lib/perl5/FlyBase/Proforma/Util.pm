@@ -1787,7 +1787,27 @@ sub get_feature_pubprop_rank {
         return $fprank{ $unique . $pub }{ $type_id . $value };
     }
     elsif ( exists( $fprank{ $unique . $pub }{$type_id} ) ) {
+
+        # The type is cached from an earlier value in this run, but this
+        # value may already be in chado (e.g. a P32 merge moving the same
+        # value from a second losing pub onto the winner). Reuse its rank
+        # rather than writing the value again at a new rank.
+        if ( defined($value) ) {
+            my $nmm = $dbh->prepare(
+"select rank from feature_pubprop, feature, pub, feature_pub where feature.feature_id=feature_pub.feature_id and pub.pub_id=feature_pub.pub_id and feature_pub.feature_pub_id=feature_pubprop.feature_pub_id and feature.uniquename='$unique' and pub.uniquename='$pub' and feature_pubprop.type_id=$type_id and value= E'$value';"
+            );
+            $nmm->execute;
+            my $existing = $nmm->fetchrow_array;
+            if ( defined($existing) ) {
+                $fprank{ $unique . $pub }{ $type_id . $value } = $existing;
+                return $existing;
+            }
+        }
         $fprank{ $unique . $pub }{$type_id} += 1;
+        if ( defined($value) ) {
+            $fprank{ $unique . $pub }{ $type_id . $value } =
+              $fprank{ $unique . $pub }{$type_id};
+        }
         return $fprank{ $unique . $pub }{$type_id};
     }
     else {
@@ -5172,6 +5192,35 @@ sub get_feature_cvtermprop_rank {
     }
     else {
         if ( defined( $fprank{$fb_id}{ $cvterm . $pub . $type } ) ) {
+
+            # The type is cached from an earlier value in this run, but this
+            # value may already be in chado (e.g. a P32 merge moving the same
+            # value from a second losing pub onto the winner). Reuse its rank
+            # rather than writing the value again at a new rank.
+            if ( defined($value) ) {
+                my $fc_el = $dbh->prepare(
+                    "select max(feature_cvtermprop.rank) from
+			feature_cvterm,
+			feature, cv, cvterm, pub, cvterm cvterm2, feature_cvtermprop
+			where feature_cvterm.feature_id=feature.feature_id and
+			feature.uniquename='$fb_id' and
+			feature_cvtermprop.feature_cvterm_id =
+			feature_cvterm.feature_cvterm_id
+			and feature_cvtermprop.type_id=cvterm2.cvterm_id and
+			cvterm2.name='$type'
+				and
+			feature_cvterm.cvterm_id=cvterm.cvterm_id and cvterm.cv_id=cv.cv_id
+			and cv.name='$cv' and cvterm.name= E'$cvterm' and
+			feature_cvterm.pub_id=pub.pub_id and
+			pub.uniquename='$pub' and feature_cvtermprop.value= E'$value'"
+                );
+                $fc_el->execute;
+                my $f_r = $fc_el->fetchrow_array;
+                if ( defined($f_r) ) {
+                    $fprank{$fb_id}{ $cvterm . $pub . $type . $value } = $f_r;
+                    return $f_r;
+                }
+            }
             $fprank{$fb_id}{ $cvterm . $pub . $type } += 1;
             if ( defined($value) ) {
                 $fprank{$fb_id}{ $cvterm . $pub . $type . $value } =
