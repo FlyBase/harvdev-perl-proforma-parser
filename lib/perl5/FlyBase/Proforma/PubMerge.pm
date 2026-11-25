@@ -137,7 +137,30 @@ sub move_row {
 
     # The winner already has this row: in the database, or written earlier in this run.
     my $exists = ( $winner_row || $written{$row_key} ) ? 1 : 0;
+
+    # Snapshot this row's run state: if building the XML dies below, the row
+    # was not written, so a later losing pub with the same row must not
+    # think it (or its children) already went to the winner.
+    my $saved = $written{$row_key}
+      ? {
+        sigs   => { map { $_ => { %{ $written{$row_key}{sigs}{$_} } } } keys %{ $written{$row_key}{sigs} } },
+        loaded => { %{ $written{$row_key}{loaded} } }
+      }
+      : undef;
     $written{$row_key} ||= { sigs => {}, loaded => {} };
+    my $out = eval { build_move_xml( $ctx, $table, $col, $row, $meta, $winner_row, $row_key, $exists ) };
+    if ($@) {
+        my $err = $@;
+        if   ($saved) { $written{$row_key} = $saved; }
+        else          { delete $written{$row_key}; }
+        die $err;
+    }
+    return $out;
+}
+
+sub build_move_xml {
+    my ( $ctx, $table, $col, $row, $meta, $winner_row, $row_key, $exists ) = @_;
+    my $doc = $ctx->{doc};
 
     my $add = $doc->createElement($table);
     foreach my $c ( @{ $meta->{uk} } ) {
