@@ -1054,13 +1054,19 @@ sub update_pub {
                 is_obsolete => $is_o,
                 macro_id    => "cvterm_" . $cv_id
             ),
-            pub_id => $unique
+            pub_id => $unique,
+
+            # is_not is part of the unique key: without it a NOT annotation
+            # was written to the winner as a positive one and its delete
+            # missed the loser's row.
+            is_not => $is_not
         );
         my $fcv_old = create_ch_feature_cvterm(
             doc        => $doc,
             feature_id => $fu,
             cvterm_id  => "cvterm_" . $cv_id,
-            pub_id     => $old
+            pub_id     => $old,
+            is_not     => $is_not
         );
         $fcv_old->setAttribute( 'op', 'delete' );
         my $fcvp_stat =
