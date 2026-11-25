@@ -8,6 +8,7 @@ use XML::DOM;
 use FlyBase::WriteChado;
 require Exporter;
 use FlyBase::Proforma::Util;
+use FlyBase::Proforma::PubMerge;
 use Carp qw(croak);
 use Encode;
 our @ISA = qw(Exporter);
@@ -298,6 +299,8 @@ sub process {
                 $out.=dom_toString($pdbx);
                 $pdbx->dispose();
                 $out.=update_pub($self->{db}, $doc, $unique,$item);
+                # DC-1120: move data in all other pub-linked tables
+                $out.=merge_pub_links($self->{db}, $doc, $unique,$item, \@items);
             }
             
         }

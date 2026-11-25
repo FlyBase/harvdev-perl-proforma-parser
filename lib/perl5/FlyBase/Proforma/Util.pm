@@ -786,39 +786,15 @@ sub update_pub {
     my $unique = shift;
     my $old    = shift;
     my $out    = '';
-    ###tables containing the pub
-    ### expression_pub               | table | emmert
-    ### feature_pub                  | table | emmert
-    ### feature_pubprop              | table | emmert
-    ### feature_relationship_pub     | table | emmert
-    ### feature_relationshipprop_pub | table | emmert
-    ### featureloc_pub               | table | emmert
-    ### featuremap_pub               | table | emmert
-    ### featureprop_pub              | table | emmert
-    ### feature_cvterm
-    ### feature_expression
-    ### feature_interaction_pub
-    ### feature_synonym
-    ### phenstatement
-    ### phenotype_comparison
-    ### phendesc
-    ### library_pub
-    ### library_cvterm
-    ### library_interaction
-    ### library_relationship_pub
-    ### library_synonym
-    ### libraryprop_pub
-    ### interaction_pub
-    ### interaction_cvterm
-    ### interaction_expression
-    ### interaction_cell_line
-    ### interactionprop_pub
-    ### pub_relationship
-    ### pub_prop
-    ###todo
-    ### organism_pub
-    ### organism_cvterm
-    ### organismprop_pub
+    ### P32 pub merge: move rows from the losing pub ($old) to the winning pub.
+    ### This sub moves:
+    ###   feature_pub (+ feature_pubprop), feature_relationship_pub
+    ###   (+ feature_relationshipprop_pub of those relationships), featureloc_pub,
+    ###   featureprop_pub, feature_synonym, feature_cvterm (+ feature_cvtermprop),
+    ###   phendesc, phenstatement, phenotype_comparison (+ _cvterm),
+    ###   and copies pubprop.
+    ### All other pub-linked tables are moved by merge_pub_links in
+    ### PubMerge.pm (DC-1120), which Pub.pm calls after this sub.
 
     my $ep_stat =
 "select feature_pub.feature_pub_id, feature.uniquename, feature.type_id, feature.organism_id from feature_pub, feature, pub where feature.feature_id=feature_pub.feature_id and feature_pub.pub_id=pub.pub_id and pub.uniquename='$old';";
@@ -827,11 +803,12 @@ sub update_pub {
     while ( my ( $fp_id, $f_u, $f_t, $f_o ) = $ep_nmm->fetchrow_array ) {
         print STDERR "STATE: found pub in feature_pub for $old\n";
         my ( $fg, $fs ) = get_organism_by_id( $dbh, $f_o );
-        my $ty      = get_cvterm_by_id( $dbh, $f_t );
+        my ( $tycv, $ty ) = get_cvterm_ukeys_by_id( $dbh, $f_t );
         my $feature = create_ch_feature(
             doc        => $doc,
             uniquename => $f_u,
             type       => $ty,
+            cvname     => $tycv,
             macro_id   => $f_u,
             genus      => $fg,
             species    => $fs
@@ -878,12 +855,13 @@ sub update_pub {
         $fr_nmm->fetchrow_array )
     {
         print STDERR "STATE: found pub in feature_relationship for $old\n";
-        my ( $s_u, $s_g, $s_s, $s_t ) = get_feat_ukeys_by_id( $dbh, $s_id );
+        my ( $s_u, $s_g, $s_s, $s_t, undef, $s_cv ) = get_feat_ukeys_by_id( $dbh, $s_id );
 
-        my ( $o_u, $o_g, $o_s, $o_t ) = get_feat_ukeys_by_id( $dbh, $o_id );
+        my ( $o_u, $o_g, $o_s, $o_t, undef, $o_cv ) = get_feat_ukeys_by_id( $dbh, $o_id );
         if ( $s_u eq '0' || $o_u eq '0' ) {
             print STDERR "ERROR:features may be obsoleted. $s_id, $o_id\n";
         }
+        my ( $fr_cv, $fr_type ) = get_cvterm_ukeys_by_id( $dbh, $fr_t );
         my $fr = create_ch_fr(
             doc        => $doc,
             subject_id => create_ch_feature(
@@ -891,16 +869,19 @@ sub update_pub {
                 uniquename => $s_u,
                 genus      => $s_g,
                 species    => $s_s,
-                type       => $s_t
+                type       => $s_t,
+                cvname     => $s_cv
             ),
             object_id => create_ch_feature(
                 doc        => $doc,
                 uniquename => $o_u,
                 genus      => $o_g,
                 species    => $o_s,
-                type       => $o_t
+                type       => $o_t,
+                cvname     => $o_cv
             ),
-            rtype => get_cvterm_by_id( $dbh, $fr_t ),
+            rtype   => $fr_type,
+            rtypecv => $fr_cv,
             rank  => $rank
         );
         my $fr_pub    = create_ch_fr_pub( doc => $doc, pub_id => $unique );
@@ -916,10 +897,12 @@ sub update_pub {
         while ( my ( $value, $rank, $t ) = $frp_nmm->fetchrow_array ) {
             print STDERR
               "STATE: found pub in feature_relationshipprop_pub for $old\n";
+            my ( $frp_cv, $frp_type ) = get_cvterm_ukeys_by_id( $dbh, $t );
             my $frp = create_ch_frprop(
-                doc   => $doc,
-                value => $value,
-                type  => get_cvterm_by_id( $dbh, $t ),
+                doc    => $doc,
+                value  => $value,
+                type   => $frp_type,
+                cvname => $frp_cv,
                 rank  => $rank
             );
             my $frpp = create_ch_frprop_pub( doc => $doc, pub_id => $unique );
@@ -938,7 +921,7 @@ sub update_pub {
     $fl_nmm->execute;
     while ( my ( $f_id, $rank, $locgroup ) = $fl_nmm->fetchrow_array ) {
         print STDERR "STATE: found pub in feature_loc for $old\n";
-        my ( $fu, $fg, $fs, $ft ) = get_feat_ukeys_by_id( $dbh, $f_id );
+        my ( $fu, $fg, $fs, $ft, undef, $feat_cv ) = get_feat_ukeys_by_id( $dbh, $f_id );
         if ( $fu eq '0' ) {
             print STDERR "ERROR: feature may be obsoleted $f_id\n";
         }
@@ -949,7 +932,8 @@ sub update_pub {
                 uniquename => $fu,
                 genus      => $fg,
                 species    => $fs,
-                type       => $ft
+                type       => $ft,
+                cvname     => $feat_cv
             ),
             rank     => $rank,
             locgroup => $locgroup
@@ -967,10 +951,11 @@ sub update_pub {
     $fp_nmm->execute;
     while ( my ( $fp_id, $f_i, $f_v, $f_t, $f_r ) = $fp_nmm->fetchrow_array ) {
         print STDERR "STATE: found pub in featureprop for $old\n";
-        my ( $fu, $fg, $fs, $ft ) = get_feat_ukeys_by_id( $dbh, $f_i );
+        my ( $fu, $fg, $fs, $ft, undef, $feat_cv ) = get_feat_ukeys_by_id( $dbh, $f_i );
         if ( $fu eq '0' ) {
             print STDERR "ERROR: feature may be obsoleted $f_i\n";
         }
+        my ( $fp_cv, $fp_type ) = get_cvterm_ukeys_by_id( $dbh, $f_t );
         my $featureprop = create_ch_featureprop(
             doc        => $doc,
             feature_id => create_ch_feature(
@@ -978,10 +963,12 @@ sub update_pub {
                 uniquename => $fu,
                 genus      => $fg,
                 species    => $fs,
-                type       => $ft
+                type       => $ft,
+                cvname     => $feat_cv
             ),
             rank => $f_r,
-            type => get_cvterm_by_id( $dbh, $f_t )
+            type   => $fp_type,
+            cvname => $fp_cv
         );
         my $fp_pub =
           create_ch_featureprop_pub( doc => $doc, pub_id => $unique );
@@ -999,7 +986,7 @@ sub update_pub {
     $fs_nmm->execute;
     while ( my ( $f_id, $s_id, $is_c, $is_i ) = $fs_nmm->fetchrow_array ) {
         print STDERR "STATE: found pub in feature_synonym for $old\n";
-        my ( $fu, $fg, $fs, $ft ) = get_feat_ukeys_by_id( $dbh, $f_id );
+        my ( $fu, $fg, $fs, $ft, undef, $feat_cv ) = get_feat_ukeys_by_id( $dbh, $f_id );
         if ( $fu eq '0' ) {
             print STDERR "ERROR: feature may be obsoleted $f_id\n";
         }
@@ -1012,6 +999,7 @@ sub update_pub {
                 genus      => $fg,
                 species    => $fs,
                 type       => $ft,
+                cvname     => $feat_cv,
                 macro_id   => $fu
             ),
             synonym_id => create_ch_synonym(
@@ -1043,7 +1031,7 @@ sub update_pub {
 
         #print STDERR "ERROR: found pub in feature_cvterm for $old\n";
 
-        my ( $fu, $fg, $fs, $ft ) = get_feat_ukeys_by_id( $dbh, $f_i );
+        my ( $fu, $fg, $fs, $ft, undef, $feat_cv ) = get_feat_ukeys_by_id( $dbh, $f_i );
         if ( $fu eq '0' ) {
             print STDERR "ERROR: feature may be obsoleted $f_i\n";
         }
@@ -1056,6 +1044,7 @@ sub update_pub {
                 genus      => $fg,
                 species    => $fs,
                 type       => $ft,
+                cvname     => $feat_cv,
                 macro_id   => $fu
             ),
             cvterm_id => create_ch_cvterm(
@@ -1226,6 +1215,10 @@ sub update_pub {
               create_ch_environment( doc => $doc, uniquename => $e2_id ),
             phenotype1_id =>
               create_ch_phenotype( doc => $doc, uniquename => $ph_id ),
+            # organism is required by create_ch_phenotype_comparison; without it
+            # $phen_old was undef and P32 died (DC-1120)
+            organism_id =>
+              create_ch_organism( doc => $doc, genus => $g, species => $s ),
             pub_id => $old
         );
         $phen_old->setAttribute( 'op', 'delete' );
